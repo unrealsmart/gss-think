@@ -3,11 +3,17 @@
 namespace app\earn\controller;
 
 use app\BaseController;
+use Curl\Curl;
 use think\facade\Db;
 use think\Request;
 
 class Task extends BaseController
 {
+    protected function crawl_task()
+    {
+        //
+    }
+
     /**
      * 显示资源列表
      *
@@ -16,16 +22,17 @@ class Task extends BaseController
      */
     public function index()
     {
-        $page_size = request()->param('page_size', 20);
-
         $list = Db::connect('fz')
             ->table('crawl_task')
             ->withoutField('facilities')
             ->order('id desc')
-            ->paginate($page_size);
+            ->select();
 
         $list->each(function ($item) {
-            dump($item);
+            $curl = new Curl();
+            $curl->setHeader('Content-Type', 'application/json');
+            $curl->post('http://127.0.0.1:5000/check-task-status', $item);
+            $item['task'] = $curl->error ? $curl->errorMessage : $curl->response;
             return $item;
         });
 
@@ -96,5 +103,31 @@ class Task extends BaseController
     public function delete($id)
     {
         //
+    }
+
+    /**
+     * 运行任务
+     *
+     * @param $id
+     * @throws \ErrorException
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
+    public function runCrawlTask($id)
+    {
+        $info = Db::connect('fz')
+            ->table('crawl_task')
+            ->withoutField('facilities')
+            ->where('id', $id)
+            ->order('id desc')
+            ->find();
+
+        $curl = new Curl();
+        $curl->setHeader('Content-Type', 'application/json');
+        $curl->post('http://127.0.0.1:5000/run-crawl-task', $info);
+        $task = $curl->error ? $curl->errorMessage : $curl->response;
+
+        return json($task);
     }
 }

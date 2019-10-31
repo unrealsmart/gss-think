@@ -109,6 +109,7 @@ class JsonWebToken implements iJsonWebToken
         // 设置 JWT 验证状态，以便于 currentUser 使用
         self::$is_validated = true;
 
+        // TODO 不能只验证超时，若超时过长仍需重新登录
         if ($payload['exp'] < time()) {
             return json([
                 'ADP_TOKEN_REFRESH' => true,
