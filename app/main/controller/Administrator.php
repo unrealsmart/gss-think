@@ -7,6 +7,7 @@ namespace app\main\controller;
 use app\BaseController;
 use app\common\controller\JsonWebToken;
 use app\common\model\AvatarStore;
+use app\common\model\FileStore;
 use app\main\interfaces\iAdministrator;
 use tauthz\facade\Enforcer;
 use think\facade\Db;
@@ -61,8 +62,8 @@ class Administrator extends BaseController implements iAdministrator
     protected function formatter($item)
     {
         // 查找头像文件
-        $avatar_store = new AvatarStore();
-        $item['avatar'] = $avatar_store->where([
+        $file_store = new FileStore();
+        $item['avatar'] = $file_store->where([
             'id' => $item['avatar'],
             'status' => 1,
             'is_public' => 1,
@@ -270,6 +271,9 @@ class Administrator extends BaseController implements iAdministrator
         $jwt = new JsonWebToken();
         $data['token'] = $jwt->create($data);
         $data['currentAuthority'] = Enforcer::getAllActions();
+
+        $file_store = new FileStore();
+        $data['avatar'] = $file_store->where('id', $data['avatar'])->value('path');
 
         return json($data);
     }

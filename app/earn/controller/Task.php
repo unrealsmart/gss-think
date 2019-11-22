@@ -9,11 +9,6 @@ use think\Request;
 
 class Task extends BaseController
 {
-    protected function crawl_task()
-    {
-        //
-    }
-
     /**
      * 显示资源列表
      *
@@ -31,7 +26,7 @@ class Task extends BaseController
         $list->each(function ($item) {
             $curl = new Curl();
             $curl->setHeader('Content-Type', 'application/json');
-            $curl->post('http://127.0.0.1:5000/check-task-status', $item);
+            $curl->post('http://127.0.0.1:5000/query-crawl-task', $item);
             $item['task'] = $curl->error ? $curl->errorMessage : $curl->response;
             return $item;
         });
@@ -109,6 +104,7 @@ class Task extends BaseController
      * 运行任务
      *
      * @param $id
+     * @return \think\response\Json
      * @throws \ErrorException
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
