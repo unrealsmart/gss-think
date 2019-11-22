@@ -18,10 +18,9 @@ class Administrator extends BaseController implements iAdministrator
      *
      * @var array
      */
-    protected $fulltext_search_fields = [
+    protected $index_fields = [
         'username',
         'email',
-        'name',
         'phone',
     ];
 
@@ -83,36 +82,6 @@ class Administrator extends BaseController implements iAdministrator
     }
 
     /**
-     * 搜索
-     */
-    public function search()
-    {
-        $page_size = request()->param('page_size', 20);
-        $type = request()->param('type', 'fulltext');
-        $content = request()->param('content', '');
-        $fields = request()->param('fields', []);
-
-        $administrator = new \app\main\model\Administrator();
-        $query = $administrator->withoutField('ciphertext');
-
-        $data = [];
-        if ($type === 'fulltext') {
-            foreach ($this->fulltext_search_fields as $value) {
-                $query->whereLike($value, '%' . $content . '%', 'OR');
-            }
-            $data = $query->paginate($page_size);
-        } else if ($type === 'fields') {
-            //
-        }
-
-        $data->each(function ($item) {
-            return $this->formatter($item);
-        });
-
-        return json($data);
-    }
-
-    /**
      * 保存
      *
      * @return mixed
@@ -162,6 +131,9 @@ class Administrator extends BaseController implements iAdministrator
      *
      * @param $id
      * @return mixed
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
      */
     public function update($id)
     {
@@ -234,24 +206,29 @@ class Administrator extends BaseController implements iAdministrator
      */
     public function index()
     {
+        $fulltext = request()->param('fulltext', '');
         $page_size = request()->param('page_size', 20);
 
         $administrator = new \app\main\model\Administrator();
-        $field = ['ciphertext'];
-        $where = [
-            'status' => ['=', 1],
-        ];
-        $data = $administrator
-            ->withoutField($field)
-            ->where($where)
-            ->order('id asc')
-            ->paginate($page_size);
-
+        $query = $administrator->withoutField('ciphertext');
+        if ($fulltext) {
+            foreach ($this->index_fields as $value) {
+                $query->whereLike($value, '%' . $fulltext . '%', 'OR');
+            }
+        } else {
+            $where = [
+                'status' => ['=', 1],
+            ];
+            $query->where($where)->order('id asc');
+        }
+        $data = $query->paginate($page_size);
         $data->each(function ($item) {
             return $this->formatter($item);
         });
 
-        return json($data);
+        return json(array_merge($data->toArray(), [
+            'fulltext' => $this->index_fields,
+        ]));
     }
 
     /**

@@ -14,6 +14,9 @@ class Hotel extends BaseController
      * @var array
      */
     protected $fulltext_search_fields = [
+        'id',
+        'code',
+        'hotel_id',
         'name_cn',
         'name_en',
     ];
@@ -37,7 +40,7 @@ class Hotel extends BaseController
             }
             $data = $model->paginate($page_size);
         } else if ($type === 'fields') {
-            //
+            // $fields
         }
 
         return json($data);
@@ -52,14 +55,21 @@ class Hotel extends BaseController
     public function index()
     {
         $page_size = request()->param('page_size', 20);
+        $search_content = request()->param('content');
 
-        $list = Db::connect('fz')
-            ->table('hotel_list')
-            ->withoutField('facilities')
-            ->order('id desc')
+        $table = Db::connect('fz')->table('hotel_list');
+
+        if ($search_content) {
+            foreach ($this->fulltext_search_fields as $value) {
+                $table->whereLike($value, '%' . $search_content . '%', 'OR');
+            }
+        }
+
+        $data = $table->withoutField('facilities')
+            ->order(['advantage' => 'desc', 'id' => 'desc'])
             ->paginate($page_size);
 
-        return json($list);
+        return json($data);
     }
 
     /**
@@ -108,13 +118,26 @@ class Hotel extends BaseController
     /**
      * 保存更新的资源
      *
-     * @param  \think\Request  $request
-     * @param  int  $id
-     * @return \think\Response
+     * @param \think\Request $request
+     * @param int $id
+     * @return array|\think\Model|null
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
      */
     public function update(Request $request, $id)
     {
-        //
+        $param = $request->param();
+        $table = Db::connect('fz')->table('hotel_list');
+
+        if ($table->save($param)) {
+            $data = $table->withoutField('facilities')->where('id', $id)->find();
+            return json($data);
+        } else {
+            return json([
+                'message' => lang('Update failed'),
+            ])->code(404);
+        }
     }
 
     /**

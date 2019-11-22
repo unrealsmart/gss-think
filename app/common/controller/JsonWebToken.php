@@ -22,11 +22,11 @@ class JsonWebToken implements iJsonWebToken
     ];
 
     /**
-     * 过期时间
+     * 有效周期
      *
      * @var float|int
      */
-    protected $expiry_time = 60 * 60 * 8; // 8 小时
+    protected $survival_time = 60 * 60 * 8; // 8 小时
 
     /**
      * 是否已验证
@@ -54,10 +54,11 @@ class JsonWebToken implements iJsonWebToken
             'alg' => 'HS256',   // 可定制此项（加解密由服务端决定）
             'typ' => 'JWT',     // 使用 JWT 需填写为 “JWT”，非强制命名
         ]));
+        $expiry_time = time() + $this->survival_time;
 
         $payload = base64_encode(json_encode([
             'iss' => request()->domain(),
-            'exp' => time() + $this->expiry_time,
+            'exp' => $expiry_time,
             'iat' => time(),
             'obj' => $data,
         ]));
@@ -68,7 +69,7 @@ class JsonWebToken implements iJsonWebToken
 
         $signature = hash_hmac('sha256', implode('.', [$header, $payload]), $secret_key);
 
-        return $this->encryption(implode('.', [$header, $payload, $signature]));
+        return $this->encryption(implode('.', [$header, $payload, $signature]), $expiry_time);
     }
 
     /**
@@ -91,7 +92,7 @@ class JsonWebToken implements iJsonWebToken
         ) {
             return json([
                 'ADP_LOGOUT' => true,
-                'message' => lang('authentication failure'),
+                'message' => lang('Authentication failure'),
             ], 401);
         }
 
@@ -134,9 +135,10 @@ class JsonWebToken implements iJsonWebToken
      * 加密
      *
      * @param $plaintext
+     * @param $survival_time
      * @return mixed
      */
-    public function encryption($plaintext)
+    public function encryption($plaintext, $survival_time)
     {
         $secret_key = Db::name('global_config')
             ->where('name', 'jwt_secret_key')
@@ -147,10 +149,19 @@ class JsonWebToken implements iJsonWebToken
             ->value('value');
 
         $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($cipher_methods));
-        $ciphertext = openssl_encrypt($plaintext, $cipher_methods, $secret_key, OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING, $iv);
+        $ciphertext = openssl_encrypt(
+            $plaintext,
+            $cipher_methods,
+            $secret_key,
+            OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING,
+            $iv
+        );
         $hex = bin2hex($iv);
 
-        return implode($this->division, [bin2hex($ciphertext), $hex]);
+        return [
+            'content' => implode($this->division, [bin2hex($ciphertext), $hex]),
+            'expiry_time' => $survival_time,
+        ];
     }
 
     /**

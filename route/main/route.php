@@ -31,12 +31,8 @@ Route::group('all-config', function () {
 });// ->middleware('authentication');
 
 
-// administrator route
-Route::group('administrator', function () {
-    Route::any('verification', 'main/Administrator/verification');
-    Route::any('search', 'main/Administrator/search')->middleware('authentication');
-});
-
+// administrator verification route
+Route::group('administrator/verification', 'main/Administrator/verification');
 // administrator resource route
 Route::resource('administrator', 'main/Administrator')->middleware('authentication');
 

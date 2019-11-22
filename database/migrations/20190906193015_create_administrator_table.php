@@ -73,6 +73,11 @@ class CreateAdministratorTable extends Migrator
             'comment' => '性别',
             'null' => false,
         ]);
+        $table->addColumn('description', 'string', [
+            'limit' => 255,
+            'comment' => '描述',
+            'null' => true,
+        ]);
         $table->addColumn('status', 'boolean', [
             'limit' => MysqlAdapter::INT_TINY,
             'default' => 0,

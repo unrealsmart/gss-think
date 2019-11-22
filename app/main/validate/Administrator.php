@@ -16,7 +16,6 @@ class Administrator extends Validate
         'id' => 'require',
 	    'username' => 'require|length:5,16',
         'password' => 'require|length:5,16',
-        'name' => 'max:255',
         'nickname' => 'max:255',
         'gender' => 'number',
         'phone' => 'max:32',
@@ -48,7 +47,7 @@ class Administrator extends Validate
     protected $scene = [
         'verification' => ['username', 'password', 'entrance'],
         'create' => [
-            'username', 'password', 'name', 'nickname', 'gender', 'phone', 'email', 'status',
+            'username', 'password', 'nickname', 'gender', 'phone', 'email', 'status',
             'domain', 'avatar', 'entrance',
         ],
         'update' => ['username', 'id'],

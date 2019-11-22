@@ -4,3 +4,6 @@
 *.log
 .env
 composer.lock
+/public/admin
+/public/favicon.png
+/database/migrations/20191107152258_create_mex_table.php

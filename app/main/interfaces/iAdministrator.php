@@ -7,13 +7,6 @@ namespace app\main\interfaces;
 interface iAdministrator
 {
     /**
-     * 搜索
-     *
-     * @return mixed
-     */
-    public function search();
-
-    /**
      * 保存
      *
      * @return mixed

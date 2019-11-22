@@ -34,9 +34,10 @@ interface iJsonWebToken
      * 加密
      *
      * @param $plaintext
+     * @param $survival_time
      * @return mixed
      */
-    public function encryption($plaintext);
+    public function encryption($plaintext, $survival_time);
 
     /**
      * 解密
