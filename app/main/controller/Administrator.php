@@ -185,7 +185,7 @@ class Administrator extends BaseController implements iAdministrator
             ->where('status', 1)
             ->find();
 
-        return json(['detail' => $this->formatter($data)]);
+        return json($this->formatter($data));
     }
 
     /**
@@ -227,9 +227,7 @@ class Administrator extends BaseController implements iAdministrator
             return $this->formatter($item);
         });
 
-        return json(array_merge($data->toArray(), [
-            'fulltext' => $this->index_fields,
-        ]));
+        return json($data);
     }
 
     /**

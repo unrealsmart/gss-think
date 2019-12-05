@@ -26,7 +26,7 @@ class JsonWebToken implements iJsonWebToken
      *
      * @var float|int
      */
-    protected $survival_time = 60 * 60 * 8; // 8 小时
+    protected $survival_time = 60 * 60 * 12; // 8 小时
 
     /**
      * 是否已验证
@@ -113,9 +113,8 @@ class JsonWebToken implements iJsonWebToken
         // TODO 不能只验证超时，若超时过长仍需重新登录
         if ($payload['exp'] < time()) {
             return json([
-                'ADP_TOKEN_REFRESH' => true,
-                'message' => lang('token expire, new tokens have been issued'),
-                'token' => $this->refresh($payload['obj']),
+                'ADP_LOGOUT' => true,
+                'message' => lang('token expire, please login again'),
             ]);
         }
     }
