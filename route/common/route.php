@@ -3,7 +3,6 @@
 use think\facade\Route;
 
 Route::group('unify', function () {
-
     // Global Config
     Route::any('config', 'common/unify/config');
 
@@ -15,7 +14,4 @@ Route::group('unify', function () {
 
     // Login Captcha
     Route::any('captcha', 'common/unify/captcha');
-
-    //
-
 });
