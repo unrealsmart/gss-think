@@ -32,12 +32,16 @@ Route::group('all-config', function () {
 
 
 // administrator verification route
-Route::group('administrator/verification', 'main/Administrator/verification');
+Route::any('administrator/verification', 'main/Administrator/verification');
 // administrator resource route
 Route::resource('administrator', 'main/Administrator')->middleware('authentication');
 
+// dev
+Route::resource('dev', 'main/Dev');
+
 // domain
-Route::resource('domain', 'main/Domain')->middleware('authentication');
+Route::resource('domain', 'main/Domain');
+    // ->middleware('authentication');
 
 // authority
 Route::resource('authority', 'main/Authority')->middleware('authentication');

@@ -26,7 +26,7 @@ class JsonWebToken implements iJsonWebToken
      *
      * @var float|int
      */
-    protected $survival_time = 60 * 60 * 12; // 8 小时
+    protected $survival_time = 60 * 60 * 12; // 12小时
 
     /**
      * 是否已验证

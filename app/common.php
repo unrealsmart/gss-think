@@ -32,3 +32,17 @@ if (!function_exists('request_param_handle')) {
         ];
     }
 }
+
+/**
+ *
+ */
+if (!function_exists('search_fields')) {
+    function search_fields($query, $fields = [])
+    {
+        return array_filter($query->getTableFields(), function ($value) use ($fields) {
+            if (!in_array($value, $fields)) {
+                return $value;
+            }
+        });
+    }
+}

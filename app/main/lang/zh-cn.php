@@ -10,5 +10,6 @@ return [
     // json web token
     'must use the token' => '未找到令牌，当前地址（%s）必须使用令牌',
     'token expire' => '令牌已过期',
+    'token expire, please login again' => '令牌已过期，请重新登录',
     'token expire, new tokens have been issued' => '令牌已过期，已发放新令牌',
 ];
