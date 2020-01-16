@@ -100,9 +100,14 @@ class WOWG
     {
         $wowg = new \app\tools\model\WOWG();
         $date_list = $wowg
-            ->field('id,import_time as collect_time')
+            ->field('id,import_time,import_time as collect_time')
             ->group('import_time desc')
             ->select();
+
+        $date_list->each(function ($item) {
+            $item['collect_time'] = $this->getImportFileName($item['import_time']) . '.xlsx';
+            return $item;
+        });
 
         return json($date_list);
     }
@@ -121,7 +126,6 @@ class WOWG
         $pathname = 'tools/wowg/imports/';
 
         // 解析文件名称
-        $matches = null;
         preg_match('/(?:[0-9]+(?:\-|\s|))+/', $file->getOriginalName(), $matches);
         $filename = str_replace([' ', '-'], '', $matches[0]) . '.' . $file->getOriginalExtension();
 
@@ -138,14 +142,14 @@ class WOWG
             ], 415);
         }
 
-        if (!Filesystem::disk('local')->putFileAs($pathname, $file, $filename)) {
+        if (!Filesystem::disk('local')->putFileAs($pathname, $file, $file->getOriginalName())) {
             return json([
                 'message' => '非常抱歉，文件保存失败，请重试',
             ], 500);
         }
 
         // 提取记录
-        $contents = file_get_contents(Filesystem::path($pathname . $filename));
+        $contents = file_get_contents(Filesystem::path($pathname . $file->getOriginalName()));
         $rows = explode("\r\n", $contents);
 
         $row_data = [];
@@ -259,6 +263,7 @@ class WOWG
                     $sdv = $dv;
                 }
             }
+            $import_time = isset($sdv['import_time']) ? $sdv['import_time'] : '';
             $collect_time = isset($sdv['collect_time']) ? $sdv['collect_time'] : '';
             $page_sum = isset($sdv['page_sum']) ? $sdv['page_sum'] : 0;
             $total_price = isset($sdv['total_price']) ? $sdv['total_price'] : 0;
@@ -289,8 +294,10 @@ class WOWG
             }
         }
 
-        $filename = str_replace(['-', ':', ' '], '', $collect_time);
-        $filepath = Filesystem::disk('local')->path('/tools/wowg/exports/' . $filename . '.xlsx');
+        // $filename = str_replace(['-', ':', ' '], '', $collect_time);
+        $import_name = $this->getImportFileName($import_time);
+
+        $filepath = Filesystem::disk('local')->path('/tools/wowg/exports/' . $import_name . '.xlsx');
 
         if(!is_dir(dirname($filepath))) {
             mkdir(dirname($filepath), 0777, true);
@@ -303,12 +310,30 @@ class WOWG
         header('Pragma: public');
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Cache-control: max-age=0');
-        header('Content-Disposition: attachment; filename="' . $filename . '".xlsx');
+        header('Content-Disposition: attachment; filename="' . $import_name . '".xlsx');
         header('Content-Length: ' . filesize($filepath));
         header('Content-Transfer-Encoding: binary');
         header('Expires: ' . gmdate("D, d M Y H:i:s", time() + 60 * 60 * 12) . ' GMT');
 
         return file_get_contents($filepath);
+    }
+
+    /**
+     * 获取导入文件名
+     * @param string $import_time
+     * @return mixed|string
+     */
+    public function getImportFileName($import_time = '')
+    {
+        $imports_dir = Filesystem::disk('local')->path('/tools/wowg/imports/');
+        $import_name = '';
+        foreach (scandir($imports_dir) as $value) {
+            preg_match('/(?:[0-9]+(?:\-|\s|))+/', $value, $matches);
+            if ($matches && $matches[0] && $matches[0] === str_replace(':', '-', $import_time)) {
+                $import_name = $matches[0];
+            }
+        }
+        return $import_name;
     }
 
     /**

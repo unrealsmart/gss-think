@@ -2,8 +2,9 @@
 
 use Phinx\Db\Adapter\MysqlAdapter;
 use think\migration\Migrator;
+use think\migration\db\Column;
 
-class CreateAdministratorTable extends Migrator
+class CreateRoleTable extends Migrator
 {
     /**
      * Change Method.
@@ -28,54 +29,22 @@ class CreateAdministratorTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('administrator', [
-            'engine' => 'MyISAM',
-        ]);
+        $table = $this->table('role');
 
-        $table->addColumn('username', 'string', [
-            'limit' => 32,
-            'comment' => '用户名',
-            'null' => false,
-        ]);
-        $table->addColumn('ciphertext', 'string', [
-            'limit' => 128,
-            'comment' => '密文',
-            'null' => false,
-        ]);
-        $table->addColumn('domain_id', 'integer', [
+        $table->addColumn('superior_id', 'integer', [
             'limit' => 11,
-            'comment' => '租域',
+            'comment' => '上级',
             'null' => false,
-        ]);
-        $table->addColumn('roles', 'string', [
-            'limit' => 255,
-            'comment' => '角色',
-            'null' => false,
-        ]);
-        $table->addColumn('email', 'string', [
-            'limit' => 64,
-            'comment' => '邮箱',
-            'null' => true,
-        ]);
-        $table->addColumn('phone', 'string', [
-            'limit' => 11,
-            'comment' => '手机号码',
-            'null' => true,
-        ]);
-        $table->addColumn('nickname', 'string', [
-            'limit' => 255,
-            'comment' => '昵称',
-            'null' => true,
-        ]);
-        $table->addColumn('avatar_id', 'integer', [
-            'limit' => 11,
-            'comment' => '头像',
-            'null' => true,
-        ]);
-        $table->addColumn('gender', 'integer', [
-            'limit' => MysqlAdapter::INT_TINY,
             'default' => 0,
-            'comment' => '性别',
+        ]);
+        $table->addColumn('name', 'string', [
+            'limit' => 255,
+            'comment' => '名称',
+            'null' => false,
+        ]);
+        $table->addColumn('title', 'string', [
+            'limit' => 255,
+            'comment' => '标题',
             'null' => false,
         ]);
         $table->addColumn('description', 'string', [

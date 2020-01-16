@@ -1,26 +1,25 @@
 <?php
-
+declare (strict_types = 1);
 
 namespace app\main\controller;
-
 
 use app\BaseController;
 use think\Request;
 
-class Domain extends BaseController
+class Role extends BaseController
 {
     /**
      * 显示资源列表
      *
-     * @return \think\response\Json
+     * @return \think\Response
      * @throws \think\db\exception\DbException
      */
     public function index()
     {
         $param = request()->param();
         $page_size = request()->param('page_size', 20);
-        $domain = new \app\main\model\Domain();
-        $data = $domain->withSearch(analytic_search_fields($domain), $param)->paginate($page_size);
+        $role = new \app\main\model\Role();
+        $data = $role->withSearch(analytic_search_fields($role), $param)->paginate($page_size);
         return json($data);
     }
 
@@ -37,8 +36,8 @@ class Domain extends BaseController
     /**
      * 保存新建的资源
      *
-     * @param Request $request
-     * @return \think\response\Json
+     * @param \think\Request $request
+     * @return \think\Response
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
@@ -46,13 +45,13 @@ class Domain extends BaseController
     public function save(Request $request)
     {
         $param = $request->param();
-        $domain = new \app\main\model\Domain();
-        $data = $domain->where('name', $param['name'])->find();
+        $role = new \app\main\model\Role();
+        $data = $role->where('name', $param['name'])->find();
         if ($data) {
             return json(['message' => '此名称已存在！'], 503);
         }
-        if ($domain->save($param)) {
-            return json($domain->toArray());
+        if ($role->save($param)) {
+            return json($role->toArray());
         }
         return json(['message' => '写入失败'], 503);
     }
@@ -60,19 +59,12 @@ class Domain extends BaseController
     /**
      * 显示指定的资源
      *
-     * @param $id
-     * @return array|\think\Model|null
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
+     * @param  int  $id
+     * @return \think\Response
      */
     public function read($id)
     {
-        $data = \app\main\model\Domain::where(['id' => $id, 'status' => 1])->find();
-        if (empty($data)) {
-            return json(['message' => '数据不存在'], 503);
-        }
-        return json($data);
+        //
     }
 
     /**
@@ -89,9 +81,9 @@ class Domain extends BaseController
     /**
      * 保存更新的资源
      *
-     * @param Request $request
-     * @param $id
-     * @return mixed
+     * @param \think\Request $request
+     * @param int $id
+     * @return \think\Response
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
@@ -99,7 +91,7 @@ class Domain extends BaseController
     public function update(Request $request, $id)
     {
         $param = $request->put();
-        $data = \app\main\model\Domain::where('id', $id)->find();
+        $data = \app\main\model\Role::where('id', $id)->find();
         if (empty($data)) {
             return json(['message' => '数据不存在'], 404);
         }
@@ -112,15 +104,15 @@ class Domain extends BaseController
     /**
      * 删除指定资源
      *
-     * @param $id
-     * @return \think\response\Json
+     * @param int $id
+     * @return \think\Response
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
      */
     public function delete($id)
     {
-        $data = \app\main\model\Domain::where('id', $id)->find();
+        $data = \app\main\model\Role::where('id', $id)->find();
         if (empty($data)) {
             return json(['message' => '数据不存在'], 404);
         }

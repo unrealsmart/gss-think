@@ -6,7 +6,6 @@ namespace app\main\controller;
 
 use app\BaseController;
 use app\common\controller\JsonWebToken;
-use app\common\model\AvatarStore;
 use app\common\model\FileStore;
 use app\main\interfaces\iAdministrator;
 use tauthz\facade\Enforcer;
@@ -83,6 +82,44 @@ class Administrator extends BaseController implements iAdministrator
     }
 
     /**
+     * 列表
+     *
+     * @return mixed
+     * @throws \think\db\exception\DbException
+     */
+    public function index()
+    {
+        $administrator = \app\main\model\Administrator::withoutField('ciphertext')->find(1);
+        // dump($administrator);
+        $administrator->domain;
+        // dump($administrator->toArray());
+
+        return json($administrator);
+
+//        $fulltext = request()->param('fulltext', '');
+//        $page_size = request()->param('page_size', 20);
+//
+//        $administrator = new \app\main\model\Administrator();
+//        $query = $administrator->withoutField('ciphertext');
+//        if ($fulltext) {
+//            foreach ($this->index_fields as $value) {
+//                $query->whereLike($value, '%' . $fulltext . '%', 'OR');
+//            }
+//        } else {
+//            $where = [
+//                'status' => ['=', 1],
+//            ];
+//            $query->where($where)->order('id asc');
+//        }
+//        $data = $query->paginate($page_size);
+//        $data->each(function ($item) {
+//            return $this->formatter($item);
+//        });
+//
+//        return json($data);
+    }
+
+    /**
      * 保存
      *
      * @return mixed
@@ -101,16 +138,20 @@ class Administrator extends BaseController implements iAdministrator
             ], 424);
         }
 
-        $administrator = new \app\main\model\Administrator();
-        $user = $administrator->where('username','abc')->find();
-        if (!$user['id']) {
+        $administrator = \app\main\model\Administrator::where('username',$param['username'])->find();
+        if (!$administrator) {
             return json([
                 'message' => lang('User already exists'),
             ], 401);
         }
 
-//        $ciphertext = password_hash($this->encryption($param['password']), PASSWORD_DEFAULT);
-//
+        $ciphertext = password_hash($this->encryption($param['password']), PASSWORD_DEFAULT);
+        if (!$administrator->save($param)) {
+            return json(['message' => '创建失败'], 503);
+        }
+
+        return json($administrator);
+
 //        // administrator
 //        $administrator = new \app\main\model\Administrator();
 //        $result = $administrator->save([
@@ -200,37 +241,6 @@ class Administrator extends BaseController implements iAdministrator
     }
 
     /**
-     * 列表
-     *
-     * @return mixed
-     * @throws \think\db\exception\DbException
-     */
-    public function index()
-    {
-        $fulltext = request()->param('fulltext', '');
-        $page_size = request()->param('page_size', 20);
-
-        $administrator = new \app\main\model\Administrator();
-        $query = $administrator->withoutField('ciphertext');
-        if ($fulltext) {
-            foreach ($this->index_fields as $value) {
-                $query->whereLike($value, '%' . $fulltext . '%', 'OR');
-            }
-        } else {
-            $where = [
-                'status' => ['=', 1],
-            ];
-            $query->where($where)->order('id asc');
-        }
-        $data = $query->paginate($page_size);
-        $data->each(function ($item) {
-            return $this->formatter($item);
-        });
-
-        return json($data);
-    }
-
-    /**
      * 验证
      *
      * @param $username
@@ -254,6 +264,10 @@ class Administrator extends BaseController implements iAdministrator
             return json(['message' => $validate->getError()], 401);
         }
 
+//        $grouping = Enforcer::getFilteredGroupingPolicy(0, 'user:'.$username);
+//        dump($grouping);
+//        exit();
+
         $current_user = Db::name('administrator')->where('username', $username)->find();
 
         if (!$current_user) {
@@ -273,6 +287,13 @@ class Administrator extends BaseController implements iAdministrator
         $file_store = new FileStore();
         $data['avatar'] = $file_store->where('id', $data['avatar'])->value('path');
 
+//        dump(Enforcer::getPolicy());
+//        dump(Enforcer::getGroupingPolicy());
+//        exit();
+//
+//        dump($data);
+//        exit();
+
         return json($data);
     }
 
@@ -287,6 +308,10 @@ class Administrator extends BaseController implements iAdministrator
         $secret_key = Db::name('global_config')
             ->where('name', 'administrator_secret_key')
             ->value('value');
+
+        if (empty($secret_key)) {
+            return json(['message' => '无效的生成私钥'])->code(500);
+        }
 
         $e1 = crypt($password, $secret_key);
         $e2 = md5($e1 . $secret_key);

@@ -34,15 +34,25 @@ if (!function_exists('request_param_handle')) {
 }
 
 /**
- *
+ * 排除搜索器字段
  */
-if (!function_exists('search_fields')) {
-    function search_fields($query, $fields = [])
+if (!function_exists('exclude_search_fields')) {
+    function exclude_search_fields($query, $fields = [])
     {
         return array_filter($query->getTableFields(), function ($value) use ($fields) {
             if (!in_array($value, $fields)) {
                 return $value;
             }
         });
+    }
+}
+
+/**
+ * 解析搜索器字段
+ */
+if (!function_exists('analytic_search_fields')) {
+    function analytic_search_fields($model) {
+        $param_keys = array_keys(request()->param());
+        return in_array($model->fs_name, $param_keys) ? [$model->fs_name] : $param_keys;
     }
 }

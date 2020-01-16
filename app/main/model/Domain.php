@@ -11,6 +11,9 @@ class Domain extends Model
 {
     protected $table = 'domain';
 
+    // 全文搜索请求识别参数名
+    public $fs_name = 'fs';
+
     // 搜索器排除字段
     protected $search_exclude_fields = [
         'id',
@@ -20,15 +23,37 @@ class Domain extends Model
     ];
 
     public $fields = [
-        'fs',
+        'name',
+        'title',
+        'status',
     ];
+
+//    public function domain()
+//    {
+//        return $this->hasOne(Domain::class);
+//    }
 
     public function searchFsAttr($query, $value, $data)
     {
         $expression = [];
-        foreach (search_fields($query, $this->search_exclude_fields) as $name) {
+        foreach (exclude_search_fields($query, $this->search_exclude_fields) as $name) {
             $expression[] = [$name, 'like', '%' . $value . '%'];
         }
         $query->whereOr($expression);
+    }
+
+    public function searchNameAttr($query, $value, $data)
+    {
+        $query->where('name', $value);
+    }
+
+    public function searchTitleAttr($query, $value, $data)
+    {
+        $query->where('title', $value);
+    }
+
+    public function searchStatusAttr($query, $value, $data)
+    {
+        $query->where('status', $value);
     }
 }

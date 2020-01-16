@@ -22,25 +22,41 @@ class AdministratorSeeder extends Seeder
                 'username' => 'admin',
                 'password' => '123456',
                 'domain' => 'main',
+                'role' => 'admin',
             ],
             [
                 'username' => 'unreal',
                 'password' => '123456',
                 'domain' => 'main',
+                'role' => 'admin',
+            ],
+            [
+                'username' => 'youke1',
+                'password' => '123456',
+                'domain' => 'main',
+                'role' => 'guest',
+            ],
+            [
+                'username' => 'youke2',
+                'password' => '123456',
+                'domain' => 'main',
+                'role' => 'guest',
             ],
         ];
 
-        Enforcer::addPolicy('role:Administrator', 'domain:main', '*', '(.*)', '超管');
+        Enforcer::addPolicy('role:admin', 'domain:main', '*', 'all', '超管');
+        Enforcer::addPolicy('role:guest', 'domain:main', '/admin/welcome', 'read', '游客');
 
         foreach ($data as $value) {
             $ciphertext = password_hash($this->encryption($value['password']), PASSWORD_DEFAULT);
 
-            Enforcer::AddGroupingPolicy('user:'.$value['username'], 'role:Administrator', 'domain:main');
+            Enforcer::AddGroupingPolicy('user:'.$value['username'], 'role:'.$value['role'], 'domain:main');
 
             Db::table('administrator')->save([
                 'username' => $value['username'],
                 'ciphertext' => $ciphertext,
                 'domain' => $value['domain'],
+                'role' => $value['role'],
                 'status' => 1,
             ]);
         }
