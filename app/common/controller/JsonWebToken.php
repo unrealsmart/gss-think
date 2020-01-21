@@ -6,6 +6,7 @@ namespace app\common\controller;
 
 use app\common\interfaces\iJsonWebToken;
 use app\main\model\Administrator;
+use tauthz\facade\Enforcer;
 use think\facade\Db;
 
 class JsonWebToken implements iJsonWebToken
@@ -115,7 +116,20 @@ class JsonWebToken implements iJsonWebToken
             return json([
                 'ADP_LOGOUT' => true,
                 'message' => lang('token expire, please login again'),
-            ]);
+            ], 401);
+        }
+
+        // 根据当前的路由地址判断权限
+        $userdata = $payload['obj'];
+        $contrast = ['GET' => 'r', 'POST' => 'w', 'DELETE' => 'd', 'PUT' => 'u'];
+        $args = [
+            'user:'.$userdata['username'],
+            'domain:'.$userdata['domain']['name'],
+            request()->baseUrl(),
+            $contrast[request()->method()],
+        ];
+        if (!Enforcer::enforce(...$args)) {
+            return json(['message' => lang('no authority')], 401);
         }
     }
 

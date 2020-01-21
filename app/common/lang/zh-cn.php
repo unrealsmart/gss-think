@@ -7,4 +7,5 @@ return [
     'token expire, please login again' => '令牌过期，请重新登录',
     'no auth action' => '未经授权的操作',
     'server store error' => '服务器存储错误',
+    'no authority' => '无权限',
 ];
