@@ -32,28 +32,26 @@ class CreateDomainTable extends Migrator
         $table = $this->table('domain');
 
         $table->addColumn('name', 'string', [
-            'limit' => 255,
             'comment' => '名称',
             'null' => false,
         ]);
         $table->addColumn('title', 'string', [
-            'limit' => 255,
             'comment' => '标题',
+            // 'limit' => MysqlAdapter::TEXT_TINY,
             'null' => false,
         ]);
         $table->addColumn('description', 'string', [
-            'limit' => 255,
             'comment' => '描述',
-            'null' => false,
+            // 'limit' => MysqlAdapter::TEXT_TINY,
+            // 'null' => true,
         ]);
         $table->addColumn('status', 'boolean', [
-            'limit' => MysqlAdapter::INT_TINY,
-            'default' => 0,
             'comment' => '状态',
+            // 'limit' => MysqlAdapter::INT_TINY,
             'null' => false,
+            'default' => 0,
         ]);
-
-        $table->addTimestamps('create_time', 'update_time', true);
+        $table->addTimestamps();
         $table->create();
     }
 }

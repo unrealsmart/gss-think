@@ -4,7 +4,7 @@ use Phinx\Db\Adapter\MysqlAdapter;
 use think\migration\Migrator;
 use think\migration\db\Column;
 
-class CreateRoleTable extends Migrator
+class CreateAuthorityTable extends Migrator
 {
     /**
      * Change Method.
@@ -29,37 +29,45 @@ class CreateRoleTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('role');
-
-        $table->addColumn('superior_id', 'integer', [
-            'limit' => 11,
-            'comment' => '上级',
-            'null' => false,
-            'default' => 0,
-        ]);
+        $table = $this->table('authority');
         $table->addColumn('name', 'string', [
-            'limit' => 255,
             'comment' => '名称',
+            'limit' => 128,
             'null' => false,
         ]);
         $table->addColumn('title', 'string', [
-            'limit' => 255,
             'comment' => '标题',
             'null' => false,
         ]);
-        $table->addColumn('description', 'string', [
-            'limit' => 255,
-            'comment' => '描述',
-            'null' => true,
-        ]);
-        $table->addColumn('status', 'boolean', [
-            'limit' => MysqlAdapter::INT_TINY,
+        $table->addColumn('domain', 'integer', [
+            'comment' => '所属租域',
+            'null' => false,
             'default' => 0,
-            'comment' => '状态',
+        ]);
+        $table->addColumn('role', 'integer', [
+            'comment' => '所属角色',
+            'null' => false,
+            'default' => 0,
+        ]);
+        $table->addColumn('path', 'string', [
+            'comment' => '授权路径（支持 Casbin KeyMatch 函数）',
             'null' => false,
         ]);
-
-        $table->addTimestamps('create_time', 'update_time', true);
+        $table->addColumn('action', 'string', [
+            'comment' => '授权操作',
+            'null' => false,
+        ]);
+        $table->addColumn('description', 'string', [
+            'comment' => '描述',
+        ]);
+        $table->addColumn('status', 'boolean', [
+            'comment' => '状态',
+            'null' => false,
+            'default' => 0,
+        ]);
+        $table->addForeignKey('domain', 'domain');
+        $table->addForeignKey('role', 'role');
+        $table->addTimestamps();
         $table->create();
     }
 }

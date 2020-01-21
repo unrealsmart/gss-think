@@ -30,29 +30,24 @@ class CreateTagTable extends Migrator
     public function change()
     {
         $table = $this->table('tag');
-
         $table->addColumn('name', 'string', [
-            'limit' => 128,
             'comment' => '名称',
+            'limit' => 128,
             'null' => false,
         ]);
         $table->addColumn('title', 'string', [
-            'limit' => 128,
             'comment' => '标题',
             'null' => false,
         ]);
         $table->addColumn('description', 'string', [
-            'limit' => 255,
             'comment' => '描述',
         ]);
         $table->addColumn('status', 'boolean', [
-            'limit' => MysqlAdapter::INT_TINY,
-            'default' => 0,
             'comment' => '状态',
             'null' => false,
+            'default' => 0,
         ]);
-
-        $table->addTimestamps('create_time', 'update_time', true);
+        $table->addTimestamps();
         $table->create();
     }
 }

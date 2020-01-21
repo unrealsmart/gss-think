@@ -1,6 +1,5 @@
 <?php
 
-use Phinx\Db\Adapter\MysqlAdapter;
 use think\migration\Migrator;
 
 class CreateAdministratorTable extends Migrator
@@ -28,69 +27,60 @@ class CreateAdministratorTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('administrator', [
-            'engine' => 'MyISAM',
-        ]);
-
+        $table = $this->table('administrator');
         $table->addColumn('username', 'string', [
-            'limit' => 32,
             'comment' => '用户名',
+            'limit' => 32,
             'null' => false,
         ]);
         $table->addColumn('ciphertext', 'string', [
+            'comment' => '密文', // 经过加密的密文密码
             'limit' => 128,
-            'comment' => '密文',
             'null' => false,
         ]);
-        $table->addColumn('domain_id', 'integer', [
-            'limit' => 11,
+        // 用户域不能为空，否则将会导致用户权限全部失效。
+        // 无租域也被称之为“死域”或“空域”，正常的新建用户为提交租域ID时，将会返回错误。
+        // 当一些特殊条件下，一部分用户将会失去
+        $table->addColumn('domain', 'integer', [
             'comment' => '租域',
             'null' => false,
+            // 'default' => 0,
         ]);
+        // 用户通过角色获得权限，若角色为空，则表示此用户无任何权限
+        // 你可以创建特殊的角色来取消某些用户的所有权限
         $table->addColumn('roles', 'string', [
-            'limit' => 255,
             'comment' => '角色',
-            'null' => false,
         ]);
         $table->addColumn('email', 'string', [
-            'limit' => 64,
             'comment' => '邮箱',
-            'null' => true,
         ]);
         $table->addColumn('phone', 'string', [
-            'limit' => 11,
             'comment' => '手机号码',
-            'null' => true,
+            'limit' => 32,
         ]);
         $table->addColumn('nickname', 'string', [
-            'limit' => 255,
             'comment' => '昵称',
-            'null' => true,
+            'limit' => 128,
         ]);
-        $table->addColumn('avatar_id', 'integer', [
-            'limit' => 11,
+        $table->addColumn('avatar', 'integer', [
             'comment' => '头像',
-            'null' => true,
         ]);
         $table->addColumn('gender', 'integer', [
-            'limit' => MysqlAdapter::INT_TINY,
-            'default' => 0,
             'comment' => '性别',
+            'limit' => 1,
             'null' => false,
+            'default' => 0,
         ]);
         $table->addColumn('description', 'string', [
-            'limit' => 255,
             'comment' => '描述',
-            'null' => true,
         ]);
         $table->addColumn('status', 'boolean', [
-            'limit' => MysqlAdapter::INT_TINY,
-            'default' => 0,
             'comment' => '状态',
             'null' => false,
+            'default' => 0,
         ]);
-
-        $table->addTimestamps('create_time', 'update_time', true);
+        $table->addForeignKey('domain', 'domain');
+        $table->addTimestamps();
         $table->create();
     }
 }

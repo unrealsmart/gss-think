@@ -30,56 +30,52 @@ class CreateFilestoreTable extends Migrator
     public function change()
     {
         $table = $this->table('filestore');
-
         $table->addColumn('title', 'string', [
-            'limit' => 255,
             'comment' => '标题',
             'null' => false,
         ]);
         $table->addColumn('owner', 'integer', [
-            'limit' => 11,
             'comment' => '所有者',
             'null' => false,
+            'default' => 0,
         ]);
         $table->addColumn('original_title', 'string', [
-            'limit' => 255,
             'comment' => '原始标题',
-            'null' => true,
+            'null' => false,
         ]);
         $table->addColumn('md5', 'string', [
-            'limit' => 64,
             'comment' => 'MD5',
+            'limit' => 64,
             'null' => false,
         ]);
         $table->addColumn('sha1', 'string', [
-            'limit' => 128,
             'comment' => 'SHA1',
+            'limit' => 128,
             'null' => false,
         ]);
         $table->addColumn('path', 'string', [
-            'limit' => 255,
             'comment' => '路径',
             'null' => false,
         ]);
         $table->addColumn('size', 'integer', [
-            'limit' => 11,
-            'comment' => '容量',
-            'null' => true,
-        ]);
-        $table->addColumn('is_public', 'integer', [
-            'limit' => MysqlAdapter::INT_TINY,
-            'comment' => '公共读写',
-            'null' => true,
+            'comment' => '容量（单位：bit）',
             'default' => 0,
+        ]);
+        // 对于文件的权限问题，我们参考了 Linux 系统对文件权限的描述，我们这里使用三位权限
+        // 三位权限：所有者（user）、组群（group）、其他人（other）
+        // 组群可通过所有者的 租域 + 角色 属性来定位
+        $table->addColumn('authority', 'string', [
+            'comment' => '权限',
+            'limit' => 3,
+            'null' => false,
+            'default' => '666',
         ]);
         $table->addColumn('status', 'boolean', [
-            'limit' => MysqlAdapter::INT_TINY,
-            'default' => 0,
             'comment' => '状态',
             'null' => false,
+            'default' => 0,
         ]);
-
-        $table->addTimestamps('create_time', 'update_time', true);
+        $table->addTimestamps();
         $table->create();
     }
 }

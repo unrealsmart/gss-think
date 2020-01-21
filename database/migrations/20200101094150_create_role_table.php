@@ -2,8 +2,9 @@
 
 use Phinx\Db\Adapter\MysqlAdapter;
 use think\migration\Migrator;
+use think\migration\db\Column;
 
-class CreateGlobalConfigTable extends Migrator
+class CreateRoleTable extends Migrator
 {
     /**
      * Change Method.
@@ -28,18 +29,19 @@ class CreateGlobalConfigTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('global_config');
+        $table = $this->table('role');
+        $table->addColumn('superior', 'integer', [
+            'comment' => '上级',
+            'null' => false,
+            'default' => 0,
+        ]);
         $table->addColumn('name', 'string', [
             'comment' => '名称',
-            'limit' => 64,
             'null' => false,
         ]);
         $table->addColumn('title', 'string', [
             'comment' => '标题',
             'null' => false,
-        ]);
-        $table->addColumn('value', 'string', [
-            'comment' => '值',
         ]);
         $table->addColumn('description', 'string', [
             'comment' => '描述',
