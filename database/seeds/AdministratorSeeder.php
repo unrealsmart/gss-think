@@ -16,7 +16,9 @@ class AdministratorSeeder extends Seeder
      */
     public function run()
     {
-        // 此函数中使用的 domain = main 需确保数据表 domain 中存在
+        // write admin role
+        Enforcer::addPolicy('role:admin', 'domain:main', '*', 'a');
+
         $data = [
             [
                 'username' => 'admin',
@@ -44,21 +46,23 @@ class AdministratorSeeder extends Seeder
             ],
         ];
 
-        Enforcer::addPolicy('role:admin', 'domain:main', '*', 'all', '超管');
-        Enforcer::addPolicy('role:guest', 'domain:main', '/admin/welcome', 'read', '游客');
-
         foreach ($data as $value) {
-            $ciphertext = password_hash($this->encryption($value['password']), PASSWORD_DEFAULT);
-
-            Enforcer::AddGroupingPolicy('user:'.$value['username'], 'role:'.$value['role'], 'domain:main');
-
-            Db::table('administrator')->save([
-                'username' => $value['username'],
-                'ciphertext' => $ciphertext,
-                'domain' => $value['domain'],
-                'role' => $value['role'],
-                'status' => 1,
-            ]);
+            $domain_id = Db::table('domain')->where('name', $value['domain'])->value('id');
+            $role_id = Db::table('role')->where('name', $value['role'])->value('id');
+            if ($domain_id && $role_id) {
+                Enforcer::addGroupingPolicy(
+                    'user:'.$value['username'],
+                    'role:'.$value['role'],
+                    'domain:'.$value['domain']
+                );
+                Db::table('administrator')->save([
+                    'username' => $value['username'],
+                    'ciphertext' => password_hash($this->encryption($value['password']), PASSWORD_DEFAULT),
+                    'domain' => $domain_id,
+                    'roles' => $role_id,
+                    'status' => 1,
+                ]);
+            }
         }
     }
 
@@ -66,7 +70,8 @@ class AdministratorSeeder extends Seeder
      * 管理员专用加密程序
      *
      * 请注意：
-     * 此加密函数应与 main/controller/Administrator.php 中的加密函数保持一致，否则将会导致解密失败
+     * 你可以自定义加密方法，但此加密函数应与 @see \app\main\controller\Administrator::encryption() 中的加密函数保持一致，
+     * 否则将会导致解密失败
      *
      * @param $password
      * @return string
@@ -77,6 +82,7 @@ class AdministratorSeeder extends Seeder
             ->where('name', 'administrator_secret_key')
             ->value('value');
 
+        // 默认的加密方法
         $e1 = crypt($password, $secret_key);
         $e2 = md5($e1 . $secret_key);
         $e3 = sha1($e2 . $secret_key);
