@@ -47,10 +47,7 @@ interface iAdministrator
     /**
      * 验证
      *
-     * @param $username
-     * @param $password
-     * @param $entrance
      * @return mixed
      */
-    public function verification($username, $password, $entrance);
+    public function verification();
 }

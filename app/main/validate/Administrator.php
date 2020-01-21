@@ -16,14 +16,14 @@ class Administrator extends Validate
         'id' => 'require',
 	    'username' => 'require|length:5,16',
         'password' => 'require|length:5,16',
+        'domain' => 'require|number',
+        'avatar' => 'number',
+        'roles' => 'max:255',
         'nickname' => 'max:255',
         'gender' => 'number',
         'phone' => 'max:32',
         'email' => 'max:255',
         'status' => 'number',
-        'domain' => 'max:255',
-        'avatar' => 'number',
-        'entrance' => 'require',
     ];
     
     /**
@@ -35,7 +35,6 @@ class Administrator extends Validate
     protected $message = [
         'username' => '用户名可能不存在',
         'password' => '用户名或密码错误',
-        'entrance' => '未标识的来源',
         'id' => 'ID不存在',
     ];
 
@@ -45,11 +44,14 @@ class Administrator extends Validate
      * @var array
      */
     protected $scene = [
-        'verification' => ['username', 'password', 'entrance'],
+        'verification' => ['username', 'password'],
         'create' => [
             'username', 'password', 'nickname', 'gender', 'phone', 'email', 'status',
-            'domain', 'avatar', 'entrance',
+            'domain', 'avatar', 'roles',
         ],
-        'update' => ['username', 'id'],
+        'update' => [
+            'password', 'nickname', 'gender', 'phone', 'email', 'status',
+            'domain', 'avatar', 'roles',
+        ],
     ];
 }

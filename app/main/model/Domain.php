@@ -28,11 +28,6 @@ class Domain extends Model
         'status',
     ];
 
-//    public function domain()
-//    {
-//        return $this->hasOne(Domain::class);
-//    }
-
     public function searchFsAttr($query, $value, $data)
     {
         $expression = [];
