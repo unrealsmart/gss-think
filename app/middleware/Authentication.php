@@ -10,8 +10,6 @@ class Authentication
     public function handle($request, \Closure $next)
     {
         $token = str_replace('Bearer ', '', $request->header('authorization'));
-        $jwt = new JsonWebToken();
-
         if (empty($token)) {
             return json([
                 'ADP_LOGOUT' => true,
@@ -19,6 +17,7 @@ class Authentication
             ], 401);
         }
 
+        $jwt = new JsonWebToken();
         $response = $jwt->verification($token);
         if ($response instanceof Response) {
             return $response;
