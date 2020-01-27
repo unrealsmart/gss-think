@@ -11,6 +11,22 @@ Route::any('/t1/1', function () {
     return 't1/1';
 })->middleware('authentication');
 
+Route::any('/a/1', function () {
+    // dump(Enforcer::getPermissionsForUserInDomain('user:temp1', 'domain:test'));
+
+    dump(Enforcer::getRolesForUserInDomain('user:temp2', 'domain:test'));
+    dump(Enforcer::getUsersForRoleInDomain('role:temp2', 'domain:test'));
+    dump(Enforcer::getPermissionsForUserInDomain('role:temp2', 'domain:test'));
+
+    dump(Enforcer::getImplicitRolesForUser('user:temp2', 'domain:test'));
+    dump(Enforcer::getImplicitPermissionsForUser('user:temp2', 'domain:test'));
+    
+    dump(Enforcer::enforce('user:temp2', 'domain:test', '/main/a/*', 'd'));
+    dump(Enforcer::enforce('user:temp2', 'domain:test', '/main/w/*', 'w'));
+
+    return 'ok';
+});
+
 // test
 Route::any('test', function () {
 

@@ -8,4 +8,5 @@ return [
     'no auth action' => '未经授权的操作',
     'server store error' => '服务器存储错误',
     'no authority' => '无权限',
+    'storage fail' => '存储失败',
 ];

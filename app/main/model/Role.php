@@ -11,4 +11,9 @@ use think\Model;
 class Role extends Model
 {
     protected $name = 'role';
+
+    public function searchDomainAttr($query, $value, $data)
+    {
+        $query->where('domain', $value);
+    }
 }
