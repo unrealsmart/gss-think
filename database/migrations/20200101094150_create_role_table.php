@@ -43,6 +43,10 @@ class CreateRoleTable extends Migrator
             'comment' => '标题',
             'null' => false,
         ]);
+        $table->addColumn('domain', 'integer', [
+            'comment' => '租域ID',
+            'null' => false,
+        ]);
         $table->addColumn('description', 'string', [
             'comment' => '描述',
         ]);

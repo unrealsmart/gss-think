@@ -37,17 +37,13 @@ class CreateDomainTable extends Migrator
         ]);
         $table->addColumn('title', 'string', [
             'comment' => '标题',
-            // 'limit' => MysqlAdapter::TEXT_TINY,
             'null' => false,
         ]);
         $table->addColumn('description', 'string', [
             'comment' => '描述',
-            // 'limit' => MysqlAdapter::TEXT_TINY,
-            // 'null' => true,
         ]);
         $table->addColumn('status', 'boolean', [
             'comment' => '状态',
-            // 'limit' => MysqlAdapter::INT_TINY,
             'null' => false,
             'default' => 0,
         ]);

@@ -44,7 +44,6 @@ class CreateAdministratorTable extends Migrator
         $table->addColumn('domain', 'integer', [
             'comment' => '租域',
             'null' => false,
-            // 'default' => 0,
         ]);
         // 用户通过角色获得权限，若角色为空，则表示此用户无任何权限
         // 你可以创建特殊的角色来取消某些用户的所有权限
