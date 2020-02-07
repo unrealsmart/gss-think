@@ -1,68 +1,17 @@
 <?php
 
-use tauthz\facade\Enforcer;
 use think\facade\Route;
 
-
-Route::any('/t/1', function () {
-    return 't/1';
-})->middleware('authentication');
-Route::any('/t1/1', function () {
-    return 't1/1';
+Route::any('/re', function (\app\Request $request) {
+    $jwt = new \app\common\controller\JsonWebToken();
+    dump($jwt->currentUser());
+    return 1;
 })->middleware('authentication');
 
-Route::any('/a/1', function () {
-    // dump(Enforcer::getPermissionsForUserInDomain('user:temp1', 'domain:test'));
-
-    dump(Enforcer::getRolesForUserInDomain('user:temp2', 'domain:test'));
-    dump(Enforcer::getUsersForRoleInDomain('role:temp2', 'domain:test'));
-    dump(Enforcer::getPermissionsForUserInDomain('role:temp2', 'domain:test'));
-
-    dump(Enforcer::getImplicitRolesForUser('user:temp2', 'domain:test'));
-    dump(Enforcer::getImplicitPermissionsForUser('user:temp2', 'domain:test'));
-    
-    dump(Enforcer::enforce('user:temp2', 'domain:test', '/main/a/*', 'd'));
-    dump(Enforcer::enforce('user:temp2', 'domain:test', '/main/w/*', 'w'));
-
-    return 'ok';
-});
-
-// test
-Route::any('test', function () {
-
-//    dump(lang(null));
-//    return 1;
-
-    // Casbin::createRole(['admin']);
-    //
-    // dump(Enforcer::addPolicy('role:test', 'domain:test', '*', '(.*)', 'TEST'));
-
-    // $casbin = new Casbin();
-    // $casbin->addRole();
-
-    // r 读取
-    // w 写入
-    // d 删除
-    // u 更新
-    // a 所有
-
-//    dump(Enforcer::addPolicy('role:admin', 'domain:main', '/t*', 'r'));
-//    dump(Enforcer::addGroupingPolicy('user:alice', 'role:admin', 'domain:main'));
-//    dump(Enforcer::getRolesForUserInDomain('user:alice', 'domain:main'));
-//    dump(Enforcer::enforce('user:alice', 'domain:main', '/t/1', 'r'));
-//
-//    dump(Enforcer::addPolicy('role:admin2', 'domain:main2', '*', 'a'));
-//    dump(Enforcer::addGroupingPolicy('user:alice2', 'role:admin2', 'domain:main2'));
-//    dump(Enforcer::getRolesForUserInDomain('user:alice2', 'domain:main2'));
-//    dump(Enforcer::enforce('user:alice2', 'domain:main2', '/1', 'r'));
-
-//    dump(Enforcer::addPolicy('role:admin', 'domain:main', '/a/*', 'all'));
-//    dump(Enforcer::addGroupingPolicy('user:alice', 'role:admin', 'domain:main'));
-//    dump(Enforcer::getRolesForUserInDomain('user:admin', 'domain:main'));
-//    dump(Enforcer::enforce('user:admin', 'domain:main', '/main/t/*', 'a'));
-
-    return;
-});
+Route::any('/er', function () {
+    $jwt = new \app\common\controller\JsonWebToken();
+    return json($jwt->currentUser());
+})->middleware('authentication');
 
 
 // ping
@@ -78,10 +27,12 @@ Route::group('/', function () {
 })
     ->middleware('authentication');
 
-// all config
-Route::group('all-config', function () {
-    Route::any('adp', 'main/AllConfig/adp');
-});// ->middleware('authentication');
+// config
+Route::group('config', function () {
+    Route::get('/', 'main/Config/index');
+    Route::post('/', 'main/Config/save');
+    Route::put('/:id', 'main/Config/update');
+});
 
 // domain
 Route::resource('domain', 'main/Domain');
