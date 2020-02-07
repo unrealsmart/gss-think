@@ -1,25 +1,23 @@
 <?php
 declare (strict_types = 1);
 
-namespace app\main\controller;
+namespace app\content\controller;
 
-use app\BaseController;
 use think\Request;
 
-class Role extends BaseController
+class Category
 {
     /**
      * 显示资源列表
      *
      * @return \think\Response
-     * @throws \think\db\exception\DbException
      */
     public function index()
     {
         $param = request()->param();
         $page_size = request()->param('page_size', 20);
-        $role = new \app\main\model\Role();
-        $data = $role->withSearch(analytic_search_fields($role), $param)->paginate($page_size);
+        $category = new \app\content\model\Category();
+        $data = $category->withSearch(analytic_search_fields($category), $param)->paginate($page_size);
         return json($data);
     }
 
@@ -36,39 +34,34 @@ class Role extends BaseController
     /**
      * 保存新建的资源
      *
-     * @param \think\Request $request
+     * @param  \think\Request  $request
      * @return \think\Response
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
      */
     public function save(Request $request)
     {
         $param = $request->param();
-        $role = new \app\main\model\Role();
-        if ($role->where('name', $param['name'])->find()) {
+        $caegory = new \app\content\model\Category();
+        $data = $caegory->where('name', $param['name'])->find();
+        if ($data) {
             return json(['message' => lang('data already exists')], 503);
         }
-        if ($role->save($param)) {
-            return json($role);
+        if ($caegory->save($param)) {
+            return json($caegory);
         }
-        return json(['message' => lang('create update')], 503);
+        return json(['message' => lang('create fail')], 503);
     }
 
     /**
      * 显示指定的资源
      *
-     * @param int $id
+     * @param  int  $id
      * @return \think\Response
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
      */
     public function read($id)
     {
-        $data = \app\main\model\Role::where(['id' => $id, 'status' => 1])->find();
+        $data = \app\content\model\Category::where(['id' => $id, 'status' => 1])->find();
         if (empty($data)) {
-            return json(['message' => lang('data does not exist')], 503);
+            return json(['message' => lang('data does not exist')], 404);
         }
         return json($data);
     }
@@ -87,17 +80,14 @@ class Role extends BaseController
     /**
      * 保存更新的资源
      *
-     * @param \think\Request $request
-     * @param int $id
+     * @param  \think\Request  $request
+     * @param  int  $id
      * @return \think\Response
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
      */
     public function update(Request $request, $id)
     {
         $param = $request->put();
-        $data = \app\main\model\Role::where('id', $id)->find();
+        $data = \app\content\model\Category::where('id', $id)->find();
         if (empty($data)) {
             return json(['message' => lang('data does not exist')], 404);
         }
@@ -110,20 +100,14 @@ class Role extends BaseController
     /**
      * 删除指定资源
      *
-     * @param int $id
+     * @param  int  $id
      * @return \think\Response
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
      */
     public function delete($id)
     {
-        $data = \app\main\model\Role::where('id', $id)->find();
+        $data = \app\content\model\Category::where('id', $id)->find();
         if (empty($data)) {
             return json(['message' => lang('data does not exist')], 404);
-        }
-        if (isset($data['name']) && $data['name'] === 'admin') {
-            return json(['message' => lang('cannot delete')], 403);
         }
         if ($data->delete()) {
             return json($id);

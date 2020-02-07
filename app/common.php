@@ -1,6 +1,19 @@
 <?php
 // 应用公共文件
 
+/**
+ * 转换路径为网站地址
+ */
+if (!function_exists('link_separator')) {
+    function link_separator($url = '', $return_default = null)
+    {
+        return $url ? str_replace('\\', '/', $url) : $return_default;
+    }
+}
+
+/**
+ * 排除数组
+ */
 if (!function_exists('array_exclude')) {
     function array_exclude($data, $except = [])
     {
@@ -51,8 +64,37 @@ if (!function_exists('exclude_search_fields')) {
  * 解析搜索器字段
  */
 if (!function_exists('analytic_search_fields')) {
-    function analytic_search_fields($model) {
+    function analytic_search_fields($model, $default_name = 'fs')
+    {
         $param_keys = array_keys(request()->param());
-        return in_array($model->fs_name, $param_keys) ? [$model->fs_name] : $param_keys;
+        $fs_name = $model->fs_name ?: $default_name;
+        return in_array($fs_name, $param_keys) ? [$fs_name => 'fs'] : $param_keys;
+    }
+}
+
+/**
+ * 对比数组是否具备交集
+ */
+if (!function_exists('array_contrast')) {
+    function array_contrast($array1, $array2)
+    {
+        return count(array_diff(array_keys($array1), array_merge($array2, ['fs'])));
+    }
+}
+
+/**
+ * 搜索器是否存在
+ */
+if (!function_exists('search_exists')) {
+    function search_exists($param, $model)
+    {
+        $exist = false;
+        foreach ($param as $key => $value) {
+            if (!method_exists($model, 'search' . ucfirst($key) . 'Attr')) {
+                $exist = true;
+                break;
+            }
+        }
+        return $exist;
     }
 }

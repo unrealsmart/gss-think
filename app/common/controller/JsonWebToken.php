@@ -6,6 +6,9 @@ namespace app\common\controller;
 
 use app\common\interfaces\iJsonWebToken;
 use app\main\model\Administrator;
+use app\main\model\Config;
+use app\main\model\Domain;
+use app\member\model\User;
 use tauthz\facade\Enforcer;
 use think\facade\Db;
 
@@ -17,60 +20,45 @@ class JsonWebToken implements iJsonWebToken
      * @var array
      */
     private $relation = [
-        // domain => your model class
         'main' => Administrator::class,
-        // 'member' => null,
+        'member' => User::class,
     ];
-
-    /**
-     * 有效周期
-     *
-     * @var float|int
-     */
-    protected $survival_time = 60 * 60 * 12; // 12小时
-
-    /**
-     * 是否已验证
-     *
-     * @var bool
-     */
-    protected static $is_validated = false;
 
     /**
      * 分割字符串
      *
      * @var string
      */
-    protected $division = '---{CIPHERTEXT-HEX}---';
+    protected $division = '-';
+
+    /**
+     * 当前用户
+     *
+     * @var null
+     */
+    static protected $currentUser = null;
 
     /**
      * 创建
      *
-     * @param array $data
+     * @param array $user
      * @return mixed
      */
-    public function create($data = [])
+    public function create($user = [])
     {
-        $header = base64_encode(json_encode([
-            'alg' => 'HS256',   // 可定制此项（加解密由服务端决定）
-            'typ' => 'JWT',     // 使用 JWT 需填写为 “JWT”，非强制命名
-        ]));
-        $expiry_time = time() + $this->survival_time;
+        // expire_time
+        // ip（base64）
+        // domian
+        // user id + update_time（base64）
+        // secert key
+        // jwt（仅在刷新时可用，通过响应头传递）
 
-        $payload = base64_encode(json_encode([
-            'iss' => request()->domain(),
-            'exp' => $expiry_time,
-            'iat' => time(),
-            'obj' => $data,
-        ]));
-
-        $secret_key = Db::name('global_config')
-            ->where('name', 'jwt_secret_key')
-            ->value('value');
-
-        $signature = hash_hmac('sha256', implode('.', [$header, $payload]), $secret_key);
-
-        return $this->encryption(implode('.', [$header, $payload, $signature]), $expiry_time);
+        $survival_time = Config::where('name', 'token_survival_time')->value('value');
+        $expiry_time = time() + $survival_time;
+        $ip = base64_encode(request()->ip());
+        $domain = Domain::where('id', $user['domain'])->value('name');
+        $plaintext = implode('.', [$user['id'], strtotime($user['update_time'])]);
+        return implode($this->division, [$expiry_time, $ip, $domain, $this->encryption($plaintext)]);
     }
 
     /**
@@ -81,100 +69,69 @@ class JsonWebToken implements iJsonWebToken
      */
     public function verification($token)
     {
-        list($ciphertext, $hex) = explode($this->division, $token);
-        $data = explode('.', $this->decryption($ciphertext, $hex));
-
-        $secret_key = Db::name('global_config')
-            ->where('name', 'jwt_secret_key')
-            ->value('value');
-
-        if (count($data) < 3 ||
-            $data[2] !== hash_hmac('sha256', implode('.', [$data[0], $data[1]]), $secret_key)
-        ) {
-            return json([
-                'ADP_LOGOUT' => true,
-                'message' => lang('Authentication failure'),
-            ], 401);
+        $data = explode($this->division, $token);
+        $expire_time = $data[0];
+        $ip = base64_decode($data[1]);
+        $domain_name = $data[2];
+        list($id, $update_time) = $this->decryption($data[3], $data[4]);
+        // check ip
+        if ($ip !== request()->ip()) {
+            return json(['message' => lang('ip error')], 401);
         }
-
-        // TODO 对于 header 数据，仍需验证
-        // $header = json_decode(base64_decode($data[0]), true);
-        $payload = json_decode(base64_decode($data[1]), true);
-
-        if ($payload['iss'] !== request()->domain()) {
-            return json([
-                'ADP_LOGOUT' => true,
-                'message' => lang('illegal issuer'),
-            ], 401);
+        /* @var $model \app\main\model\Administrator */
+        $model = new $this->relation[$domain_name];
+        $user = $model->with(['avatar'])->where('id', $id)->find();
+        $user->hidden(['ciphertext']);
+        if (empty($user)) {
+            return json(['message' => lang('user does not exist')], 401);
         }
-
-        // 设置 JWT 验证状态，以便于 currentUser 使用
-        self::$is_validated = true;
-
-        // TODO 不能只验证超时，若超时过长仍需重新登录
-        if ($payload['exp'] < time()) {
-            return json([
-                'ADP_LOGOUT' => true,
-                'message' => lang('token expire, please login again'),
-            ], 401);
+        // check domain name and id
+        $domain = Domain::where('name', $domain_name)->find();
+        if (empty($domain) || $domain['id'] !== $user['domain']) {
+            return json(['message' => lang('domain error')], 401);
         }
-
+        // check refresh interval
+        $refresh_interval = Config::where('name', 'token_refresh_interval')->value('value');
+        if (time() > $expire_time + $refresh_interval) {
+            header('APP-ACTION: LOGOUT');
+            return json(['message' => lang('token refresh interval fail')], 401);
+        }
+        // check refresh jwt for user
+        if (time() > $expire_time || $update_time < strtotime($user['update_time'])) {
+            header('Token: ' . $this->create($user));
+            header('Authorization: ' . base64_encode(json_encode($user)));
+        }
         // 根据当前的路由地址判断权限
-        $userdata = $payload['obj'];
         $contrast = ['GET' => 'r', 'POST' => 'w', 'DELETE' => 'd', 'PUT' => 'u'];
-        $args = [
-            'user:'.$userdata['username'],
-            'domain:'.$userdata['domain']['name'],
-            request()->baseUrl(),
-            $contrast[request()->method()],
-        ];
+        $args = ['user:'.$user['username'], 'domain:'.$domain['name'], request()->baseUrl(), $contrast[request()->method()]];
         if (!Enforcer::enforce(...$args)) {
             return json(['message' => lang('no authority')], 401);
         }
-    }
-
-    /**
-     * 刷新
-     *
-     * @param array $obj
-     * @return mixed
-     */
-    public function refresh($obj = [])
-    {
-        return $this->create($obj);
+        // set current user
+        self::$currentUser = $user;
     }
 
     /**
      * 加密
      *
      * @param $plaintext
-     * @param $survival_time
+     * @param $expiry_time
      * @return mixed
      */
-    public function encryption($plaintext, $survival_time)
+    public function encryption($plaintext)
     {
-        $secret_key = Db::name('global_config')
-            ->where('name', 'jwt_secret_key')
-            ->value('value');
-
-        $cipher_methods = Db::name('global_config')
-            ->where('name', 'jwt_cipher_methods')
-            ->value('value');
-
-        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($cipher_methods));
+        $secret_key = Config::where('name', 'token_secret_key')->value('value');
+        $cipher_method = Config::where('name', 'token_cipher_method')->value('value');
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($cipher_method));
         $ciphertext = openssl_encrypt(
-            $plaintext,
-            $cipher_methods,
+            base64_encode($plaintext),
+            $cipher_method,
             $secret_key,
             OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING,
             $iv
         );
         $hex = bin2hex($iv);
-
-        return [
-            'content' => implode($this->division, [bin2hex($ciphertext), $hex]),
-            'expiry_time' => $survival_time,
-        ];
+        return implode($this->division, [bin2hex($ciphertext), $hex]);
     }
 
     /**
@@ -186,36 +143,25 @@ class JsonWebToken implements iJsonWebToken
      */
     public function decryption($ciphertext, $hex)
     {
-        $secret_key = Db::name('global_config')
-            ->where('name', 'jwt_secret_key')
-            ->value('value');
-
-        $cipher_methods = Db::name('global_config')
-            ->where('name', 'jwt_cipher_methods')
-            ->value('value');
-
-        $iv = pack('H*', $hex);
-
-        return openssl_decrypt(pack('H*', $ciphertext), $cipher_methods, $secret_key, OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING, $iv);
+        $secret_key = Config::where('name', 'token_secret_key')->value('value');
+        $cipher_methods = Config::where('name', 'token_cipher_method')->value('value');
+        $decrypt = openssl_decrypt(
+            pack('H*', $ciphertext),
+            $cipher_methods,
+            $secret_key,
+            OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING,
+            pack('H*', $hex)
+        );
+        return explode('.', base64_decode($decrypt));
     }
 
     /**
-     * 用户
+     * 当前用户
      *
      * @return mixed
      */
     public function currentUser()
     {
-        if (!self::$is_validated) {
-            return false;
-        }
-
-        // not use verification
-        $token = str_replace('Bearer ', '', request()->header('authorization'));
-        list($ciphertext, $hex) = explode($this->division, $token);
-        $data = explode('.', $this->decryption($ciphertext, $hex));
-        $payload = json_decode(base64_decode($data[1]), true);
-
-        return $payload['obj'];
+        return self::$currentUser;
     }
 }

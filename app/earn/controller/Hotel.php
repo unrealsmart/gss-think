@@ -135,7 +135,7 @@ class Hotel extends BaseController
             return json($data);
         } else {
             return json([
-                'message' => lang('Update failed'),
+                'message' => lang('Update fail'),
             ])->code(404);
         }
     }

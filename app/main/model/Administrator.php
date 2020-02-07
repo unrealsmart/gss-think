@@ -4,23 +4,12 @@
 namespace app\main\model;
 
 
-use app\common\model\FileStore;
+use app\common\model\Filestore;
 use think\Model;
 
 class Administrator extends Model
 {
     protected $table = 'administrator';
-
-    // 全文搜索请求识别参数名
-    public $fs_name = 'fs';
-
-    // 搜索器排除字段
-    protected $search_exclude_fields = [
-        'id',
-        'create_time',
-        'update_time',
-        'status',
-    ];
 
     public function domain()
     {
@@ -29,20 +18,45 @@ class Administrator extends Model
 
     public function avatar()
     {
-        return $this->belongsTo(FileStore::class, 'avatar');
+        return $this->belongsTo(Filestore::class, 'avatar');
     }
 
-    public function getRolesAttr($value)
+    public function roles()
     {
-        return Role::where('id', 'in', explode(',', $value))->select();
+        $args = [Role::class, RoleRelation::class, 'original', 'objective'];
+        return $this->belongsToMany(...$args);
+    }
+
+    public function getRolesAttr($value, $data)
+    {
+        $data = RoleRelation::where('objective', $data['id'])->column('original', false);
+        return array_values($data);
     }
 
     public function searchFsAttr($query, $value, $data)
     {
+        $exclude_fields = [];
+        foreach ($query->getFieldsType() as $k => $v) {
+            if (in_array($k, ['id', 'status']) || $v === 'timestamp') {
+                $exclude_fields[] = $k;
+            }
+        }
+
         $expression = [];
-        foreach (exclude_search_fields($query, $this->search_exclude_fields) as $name) {
+        foreach (exclude_search_fields($query, $exclude_fields) as $name) {
             $expression[] = [$name, 'like', '%' . $value . '%'];
         }
+
         $query->whereOr($expression);
+    }
+
+    public function searchUsernameAttr($query, $value, $data)
+    {
+        $query->where('username', $value);
+    }
+
+    public function searchDomainAttr($query, $value, $data)
+    {
+        $query->where('domain', $value);
     }
 }

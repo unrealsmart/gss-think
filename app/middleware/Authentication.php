@@ -11,12 +11,9 @@ class Authentication
     {
         $token = str_replace('Bearer ', '', $request->header('authorization'));
         if (empty($token)) {
-            return json([
-                'ADP_LOGOUT' => true,
-                'message' => lang('must use the token', [$request->url()]),
-            ], 401);
+            header('APP-ACTION: LOGOUT');
+            return json(['message' => lang('invalid token')], 401);
         }
-
         $jwt = new JsonWebToken();
         $response = $jwt->verification($token);
         if ($response instanceof Response) {

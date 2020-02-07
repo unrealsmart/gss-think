@@ -1,5 +1,5 @@
 <?php
 
 return [
-    'Update failed' => '更新失败',
+    'Update fail' => '更新失败',
 ];

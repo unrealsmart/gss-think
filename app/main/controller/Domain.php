@@ -6,13 +6,14 @@ namespace app\main\controller;
 
 use app\BaseController;
 use think\Request;
+use think\Response;
 
 class Domain extends BaseController
 {
     /**
      * 显示资源列表
      *
-     * @return \think\response\Json
+     * @return \think\Response|\think\response\Json
      * @throws \think\db\exception\DbException
      */
     public function index()
@@ -38,7 +39,7 @@ class Domain extends BaseController
      * 保存新建的资源
      *
      * @param Request $request
-     * @return \think\response\Json
+     * @return \think\Response|\think\response\Json
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
@@ -47,21 +48,20 @@ class Domain extends BaseController
     {
         $param = $request->param();
         $domain = new \app\main\model\Domain();
-        $data = $domain->where('name', $param['name'])->find();
-        if ($data) {
-            return json(['message' => '此名称已存在！'], 503);
+        if ($domain->where('name', $param['name'])->find()) {
+            return json(['message' => lang('data already exists')], 503);
         }
         if ($domain->save($param)) {
-            return json($domain->toArray());
+            return json($domain);
         }
-        return json(['message' => '写入失败'], 503);
+        return json(['message' => lang('create fail')], 503);
     }
 
     /**
      * 显示指定的资源
      *
      * @param $id
-     * @return array|\think\Model|null
+     * @return array|\think\Model|\think\response\Json|null
      * @throws \think\db\exception\DataNotFoundException
      * @throws \think\db\exception\DbException
      * @throws \think\db\exception\ModelNotFoundException
@@ -70,7 +70,7 @@ class Domain extends BaseController
     {
         $data = \app\main\model\Domain::where(['id' => $id, 'status' => 1])->find();
         if (empty($data)) {
-            return json(['message' => '数据不存在'], 503);
+            return json(['message' => lang('data does not exist')], 404);
         }
         return json($data);
     }
@@ -101,12 +101,12 @@ class Domain extends BaseController
         $param = $request->put();
         $data = \app\main\model\Domain::where('id', $id)->find();
         if (empty($data)) {
-            return json(['message' => '数据不存在'], 404);
+            return json(['message' => lang('data does not exist')], 404);
         }
         if ($data->save($param)) {
             return json($data);
         }
-        return json(['message' => '更新失败'], 503);
+        return json(['message' => lang('update fail')], 503);
     }
 
     /**
@@ -122,11 +122,14 @@ class Domain extends BaseController
     {
         $data = \app\main\model\Domain::where('id', $id)->find();
         if (empty($data)) {
-            return json(['message' => '数据不存在'], 404);
+            return json(['message' => lang('data does not exist')], 404);
+        }
+        if (isset($data['name']) && $data['name'] === 'main') {
+            return json(['message' => lang('cannot delete')], 404);
         }
         if ($data->delete()) {
-            return json(['id' => $id]);
+            return json($id);
         }
-        return json(['message' => '删除失败'], 503);
+        return json(['message' => lang('delete fail')], 503);
     }
 }

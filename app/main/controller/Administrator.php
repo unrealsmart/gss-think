@@ -6,8 +6,8 @@ namespace app\main\controller;
 
 use app\BaseController;
 use app\common\controller\JsonWebToken;
-use app\common\model\FileStore;
 use app\main\interfaces\iAdministrator;
+use app\main\model\RoleRelation;
 use tauthz\facade\Enforcer;
 use think\facade\Db;
 use think\model\Collection;
@@ -25,11 +25,12 @@ class Administrator extends BaseController implements iAdministrator
         $param = request()->param();
         $page_size = request()->param('page_size', 20);
         $administrator = new \app\main\model\Administrator();
-        $data = $administrator
-            ->with('domain')
+        $data = $administrator->with(['avatar'])
             ->withSearch(analytic_search_fields($administrator), $param)
             ->withoutField('ciphertext')
+            ->hidden(['avatar.authority'])
             ->paginate($page_size);
+        $data->append(['roles']);
         return json($data);
     }
 
@@ -44,21 +45,22 @@ class Administrator extends BaseController implements iAdministrator
     public function save()
     {
         $param = request()->post();
+        $role_array = request()->post('roles', []);
 
         $validate = validate('Administrator');
         if (!$validate->failException(false)->scene('create')->check($param)) {
             return json(['message' => $validate->getError()], 424);
         }
 
+        // 租域是否存在
         $domain = \app\main\model\Domain::where('id', $param['domain'])->find();
         if (!$domain) {
             return json(['message' => lang('domain does not exist')], 404);
         }
 
-        $roles_array = $param['roles'] ? explode(',', $param['roles']) : [];
-        $roles_data = \app\main\model\Role::where('id', 'in', $roles_array)->select();
-        $roles_count = $roles_data->count();
-        if (count($roles_array) !== $roles_count) {
+        // 角色是否存在
+        $role = \app\main\model\Role::where('id', 'in', $role_array)->select();
+        if (count($role_array) !== $role->count()) {
             return json(['message' => lang('some roles does not exist')], 400);
         }
 
@@ -72,13 +74,21 @@ class Administrator extends BaseController implements iAdministrator
             'ciphertext' => password_hash($this->encryption($param['password']), PASSWORD_DEFAULT),
         ]);
         if (!$administrator->save($data)) {
-            return json(['message' => lang('create failed')], 503);
+            return json(['message' => lang('create fail')], 503);
         }
 
-        // 设置关系
-        $roles_data->each(function ($item) use ($param, $domain) {
+        // 设置关系 & 角色
+        $role_relation = new RoleRelation();
+        $role->each(function ($item) use ($param, $domain, $administrator, $role_relation) {
             $args = ['user:'.$param['username'], 'role:'.$item['name'], 'domain:'.$domain['name']];
             Enforcer::addGroupingPolicy(...$args);
+            if (!$role_relation->where(['original' => $item['id'], 'objective' => $administrator['id']])->find()) {
+                $role_relation->create([
+                    'original' => $item['id'],
+                    'objective' => $administrator['id'],
+                    'update_time' => date('Y-m-d H:i:s', time()),
+                ]);
+            }
         });
 
         return json(array_exclude($administrator->toArray(), ['ciphertext']));
@@ -96,6 +106,7 @@ class Administrator extends BaseController implements iAdministrator
     public function update($id)
     {
         $param = request()->put();
+        $role_array = request()->put('roles', []);
 
         $validate = validate('Administrator');
         if (!$validate->failException(false)->scene('update')->check($param)) {
@@ -104,10 +115,21 @@ class Administrator extends BaseController implements iAdministrator
             ], 424);
         }
 
+        // 用户名是否存在
         if (isset($param['username'])) {
-            return json(['message' => lang('User name cannot be changed')], 401);
+            return json(['message' => lang('user name cannot be changed')], 401);
         }
-
+        // 租域是否存在
+        $domain = \app\main\model\Domain::where('id', $param['domain'])->find();
+        if (!$domain) {
+            return json(['message' => lang('data does not exist')], 404);
+        }
+        // 角色是否存在
+        $role = \app\main\model\Role::where('id', 'in', $role_array)->select();
+        if (count($role_array) !== $role->count()) {
+            return json(['message' => lang('some roles does not exist')], 400);
+        }
+        // 用户是否存在
         $administrator = \app\main\model\Administrator::where('id', $id)->find();
         if (!$administrator) {
             return json(['message' => lang('user does not exist')])->code(404);
@@ -115,11 +137,42 @@ class Administrator extends BaseController implements iAdministrator
         if (isset($param['password'])) {
             $param['ciphertext'] = password_hash($this->encryption($param['password']), PASSWORD_DEFAULT);
         }
-        if (!$administrator->save($param)) {
-            return json(['message' => lang('update failed')])->code(403);
-        }
 
-        return json(array_exclude($administrator->toArray(), ['ciphertext', 'password']));
+        // 更新权限 & 角色
+        $wait_roles = $this->roleUpdateContrast(
+            Enforcer::getRolesForUserInDomain('user:'.$administrator['username'], 'domain:'.$domain['name']),
+            $role->toArray()
+        );
+
+        Db::startTrans();
+        try {
+            // delete
+            foreach ($wait_roles[0] as $value) {
+                $args = ['user:'.$administrator['username'], 'role:'.$value, 'domain:'.$domain['name']];
+                Enforcer::deleteRoleForUserInDomain(...$args);
+                $role_id = \app\main\model\Role::where('name', $value)->value('id');
+                RoleRelation::where(['original' => $role_id, 'objective' => $administrator['id']])->delete();
+            }
+            // create
+            foreach ($wait_roles[1] as $value) {
+                $args = ['user:'.$administrator['username'], 'role:'.$value, 'domain:'.$domain['name']];
+                Enforcer::addRoleForUserInDomain(...$args);
+                $role_id = \app\main\model\Role::where('name', $value)->value('id');
+                RoleRelation::create([
+                    'original' => $role_id,
+                    'objective' => $administrator['id'],
+                    'update_time' => date('Y-m-d H:i:s', time()),
+                ]);
+            }
+            $administrator->save($param);
+            Db::commit();
+            return json(array_exclude($administrator->toArray(), ['ciphertext', 'password']));
+        } catch (\Exception $e) {
+            // dump($e);
+            // TODO 存储为错误日期
+            Db::rollback();
+            return json(['message' => lang('update fail')])->code(403);
+        }
     }
 
     /**
@@ -133,15 +186,12 @@ class Administrator extends BaseController implements iAdministrator
      */
     public function read($id)
     {
-        $administrator = new \app\main\model\Administrator();
-
-        $data = $administrator
+        $data = \app\main\model\Administrator::with(['avatar'])
             ->withoutField('ciphertext')
-            ->where('id', $id)
-            ->where('status', 1)
+            ->where(['id' => $id, 'status' => 1])
+            ->hidden(['avatar.authority'])
             ->find();
-
-        return json($this->formatter($data));
+        return json($data);
     }
 
     /**
@@ -157,12 +207,27 @@ class Administrator extends BaseController implements iAdministrator
     {
         $data = \app\main\model\Administrator::where('id', $id)->find();
         if (empty($data)) {
-            return json(['message' => lang('data does exist')], 404);
+            return json(['message' => lang('data does not exist')], 404);
         }
-        if ($data->delete()) {
-            return json(['id' => $id]);
+        if (isset($data['username']) && $data['username'] === 'admin') {
+            return json(['message' => lang('cannot delete')], 403);
         }
-        return json(['message' => lang('delete failed')], 503);
+
+        Db::startTrans();
+        try {
+            // 删除权限 & 角色关系 & 用户
+            Enforcer::deleteUser('user:'.$data['username']);
+            RoleRelation::where('objective', $id)->delete();
+            $data->delete();
+            // 提交
+            Db::commit();
+            return json($id);
+        }
+        catch (\Exception $e) {
+            // TODO
+            Db::rollback();
+            return json(['message' => lang('delete fail')], 503);
+        }
     }
 
     /**
@@ -176,43 +241,33 @@ class Administrator extends BaseController implements iAdministrator
     public function verification()
     {
         $param = request()->post();
-
         $validate = validate('Administrator');
         if (!$validate->scene('verification')->check($param)) {
             return json(['message' => $validate->getError()], 401);
         }
-
-        $administrator = \app\main\model\Administrator::with('domain')
-            ->where('username', $param['username'])
-            ->where('status', 1)
-            ->find();
+        // 获取当前认证的用户信息
+        $where = ['username' => $param['username'], 'status' => 1];
+        $administrator = \app\main\model\Administrator::with(['avatar'])->where($where)->find();
         if (!$administrator) {
             return json(['message' => lang('the user exist')], 401);
         }
         if (!password_verify($this->encryption($param['password']), $administrator['ciphertext'])) {
             return json(['message' => lang('username or password incorrect')], 401);
         }
-        $administrator->domain;
-
-        $jwt = new JsonWebToken();
-        $data = array_exclude($administrator->toArray(), ['ciphertext']);
-        $data['token'] = $jwt->create($data);
-
-        if (empty($data['avatar'])) {
-            $data['avatar'] = FileStore::where('id', $data['avatar'])->value('path');
-        }
-
+        $administrator->hidden(['ciphertext']);
+        // 获取租域名称
+        $domain_name = \app\main\model\Domain::where('id', $administrator['domain'])->value('name');
         // 获取角色
-        $roles = Enforcer::getRolesForUserInDomain(
-            'user:'.$param['username'],
-            'domain:'.$data['domain']['name']
-        );
+        $roles = Enforcer::getRolesForUserInDomain('user:'.$param['username'], 'domain:'.$domain_name);
         $roles = Collection::make($roles)->each(function ($item) {
             return str_replace('role:', '', $item);
         });
-        $data['currentAuthority'] = $roles->toArray();
+        // 创建令牌
+        $jwt = new JsonWebToken();
+        // 当前权限
+        $administrator->appendData(['currentAuthority' => $roles]);
 
-        return json($data);
+        return json($administrator)->header(['Token' => $jwt->create($administrator)]);
     }
 
     /**
@@ -223,7 +278,7 @@ class Administrator extends BaseController implements iAdministrator
      */
     private function encryption($password)
     {
-        $secret_key = Db::name('global_config')
+        $secret_key = Db::name('config')
             ->where('name', 'administrator_secret_key')
             ->value('value');
 
@@ -237,6 +292,26 @@ class Administrator extends BaseController implements iAdministrator
         $e4 = strrev($e3);
 
         return $e4;
+    }
+
+    /**
+     * 角色更新对比（计算需要移除和新增的关系）
+     *
+     * @param $rd1
+     * @param $rd2
+     * @return array    [移除, 新增]
+     */
+    public function roleUpdateContrast($rd1, $rd2)
+    {
+        $na1 = [];
+        $na2 = [];
+        foreach ($rd1 as $v) {
+            $na1[] = str_replace('role:', '', $v);
+        }
+        foreach ($rd2 as $v) {
+            $na2[] = $v['name'];
+        }
+        return [array_diff($na1, $na2), array_diff($na2, $na1)];
     }
 
     /**
@@ -263,36 +338,5 @@ class Administrator extends BaseController implements iAdministrator
         }
 
         return $roles;
-    }
-
-    /**
-     * 格式化
-     * @param $item
-     * @return
-     * @throws \think\db\exception\DataNotFoundException
-     * @throws \think\db\exception\DbException
-     * @throws \think\db\exception\ModelNotFoundException
-     */
-    protected function formatter($item)
-    {
-        // 查找头像文件
-        $file_store = new FileStore();
-        $item['avatar'] = $file_store->where([
-            'id' => $item['avatar'],
-            'status' => 1,
-            'is_public' => 1,
-        ])->select();
-
-        // 查找角色信息
-        $item['roles'] = $this->getAuthority($item['username']);
-
-        // 查找域信息
-        $domain = new \app\main\model\Domain();
-        $item['domain'] = $domain->where([
-            'name' => $item['domain'],
-            'status' => 1,
-        ])->find();
-
-        return $item;
     }
 }

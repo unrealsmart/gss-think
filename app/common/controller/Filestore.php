@@ -6,7 +6,7 @@ namespace app\common\controller;
 use think\Request;
 use think\facade\Filesystem;
 
-class FileStore
+class Filestore
 {
     public $allow_mime = [
         'text' => [
@@ -43,7 +43,14 @@ class FileStore
         return $type;
     }
 
-
+    /**
+     * 存储
+     *
+     * @return \think\response\Json
+     * @throws \think\db\exception\DataNotFoundException
+     * @throws \think\db\exception\DbException
+     * @throws \think\db\exception\ModelNotFoundException
+     */
     public function store()
     {
         $fileSize = 1024 * 1024 * 5; // 5MB
@@ -53,19 +60,17 @@ class FileStore
         }
         
         $file = request()->file('file');
-        $store = new \app\common\model\FileStore();
-
-        if ($store->where(['md5' => $file->md5(), 'sha1' => $file->sha1()])->find()) {
-            //
-            echo 1;
-            dump($store);
-            return 1;
+        $store = new \app\common\model\Filestore();
+        $md5 = $file->md5();
+        $sha1 = $file->sha1();
+        $record = $store->where(['md5' => $md5, 'sha1' => $sha1])->find();
+        if ($record) {
+            return json($record);
         }
 
-        $path = Filesystem::disk('public')->putFile($this->type($file), $file);
-        dump($path);
-
-        exit();
+        $path = Filesystem::disk('public')->putFile($this->type($file), $file, function ($that) {
+            return $that->md5();
+        });
         if (!$path) {
             return json(['message' => lang('storage fail')], 403);
         }
@@ -74,8 +79,8 @@ class FileStore
             'title' => $file->hashName(),
             'owner' => 0,
             'original_title' => $file->getOriginalName(),
-            'md5' => $file->md5(),
-            'sha1' => $file->sha1(),
+            'md5' => $md5,
+            'sha1' => $sha1,
             'path' => $path,
             'size' => $file->getSize(),
             'authority' => '666',
