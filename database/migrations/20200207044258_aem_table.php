@@ -1,10 +1,9 @@
 <?php
 
-use Phinx\Db\Adapter\MysqlAdapter;
 use think\migration\Migrator;
 use think\migration\db\Column;
 
-class CreateTagTable extends Migrator
+class AemTable extends Migrator
 {
     /**
      * Change Method.
@@ -29,7 +28,7 @@ class CreateTagTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('tag');
+        $table = $this->table('aem');
         $table->addColumn('name', 'string', [
             'comment' => '名称',
             'limit' => 128,
@@ -37,6 +36,10 @@ class CreateTagTable extends Migrator
         ]);
         $table->addColumn('title', 'string', [
             'comment' => '标题',
+            'null' => false,
+        ]);
+        $table->addColumn('class', 'string', [
+            'comment' => '类名',
             'null' => false,
         ]);
         $table->addColumn('description', 'string', [

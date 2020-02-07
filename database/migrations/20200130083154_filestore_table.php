@@ -1,10 +1,9 @@
 <?php
 
-use Phinx\Db\Adapter\MysqlAdapter;
 use think\migration\Migrator;
 use think\migration\db\Column;
 
-class CreateAuthorityTable extends Migrator
+class FilestoreTable extends Migrator
 {
     /**
      * Change Method.
@@ -29,44 +28,52 @@ class CreateAuthorityTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('authority');
-        $table->addColumn('name', 'string', [
-            'comment' => '名称',
-            'limit' => 128,
-            'null' => false,
-        ]);
+        $table = $this->table('filestore');
         $table->addColumn('title', 'string', [
             'comment' => '标题',
             'null' => false,
         ]);
-        $table->addColumn('domain', 'integer', [
-            'comment' => '所属租域',
+        $table->addColumn('owner', 'integer', [
+            'comment' => '所有者',
             'null' => false,
             'default' => 0,
         ]);
-        $table->addColumn('role', 'integer', [
-            'comment' => '所属角色',
+        $table->addColumn('original_title', 'string', [
+            'comment' => '原始标题',
             'null' => false,
-            'default' => 0,
+        ]);
+        $table->addColumn('md5', 'string', [
+            'comment' => 'MD5',
+            'limit' => 64,
+            'null' => false,
+        ]);
+        $table->addColumn('sha1', 'string', [
+            'comment' => 'SHA1',
+            'limit' => 128,
+            'null' => false,
         ]);
         $table->addColumn('path', 'string', [
-            'comment' => '授权路径（支持 Casbin KeyMatch 函数）',
+            'comment' => '路径',
             'null' => false,
         ]);
-        $table->addColumn('action', 'string', [
-            'comment' => '授权操作',
-            'null' => false,
+        $table->addColumn('size', 'integer', [
+            'comment' => '容量（单位：bit）',
+            'default' => 0,
         ]);
-        $table->addColumn('description', 'string', [
-            'comment' => '描述',
+        // 对于文件的权限问题，我们参考了 Linux 系统对文件权限的描述，我们这里使用三位权限
+        // 三位权限：所有者（user）、组群（group）、其他人（other）
+        // 组群可通过所有者的 租域 + 角色 属性来定位
+        $table->addColumn('authority', 'string', [
+            'comment' => '权限',
+            'limit' => 3,
+            'null' => false,
+            'default' => '666',
         ]);
         $table->addColumn('status', 'boolean', [
             'comment' => '状态',
             'null' => false,
             'default' => 0,
         ]);
-        $table->addForeignKey('domain', 'domain');
-        $table->addForeignKey('role', 'role');
         $table->addTimestamps();
         $table->create();
     }

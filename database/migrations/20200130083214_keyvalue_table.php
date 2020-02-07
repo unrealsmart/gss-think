@@ -3,7 +3,7 @@
 use think\migration\Migrator;
 use think\migration\db\Column;
 
-class CreateCategoryTable extends Migrator
+class KeyvalueTable extends Migrator
 {
     /**
      * Change Method.
@@ -28,12 +28,7 @@ class CreateCategoryTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('category');
-        $table->addColumn('superior', 'integer', [
-            'comment' => '上级',
-            'null' => false,
-            'default' => 0,
-        ]);
+        $table = $this->table('keyvalue');
         $table->addColumn('name', 'string', [
             'comment' => '名称',
             'limit' => 64,
@@ -42,6 +37,9 @@ class CreateCategoryTable extends Migrator
         $table->addColumn('title', 'string', [
             'comment' => '标题',
             'null' => false,
+        ]);
+        $table->addColumn('value', 'string', [
+            'comment' => '值',
         ]);
         $table->addColumn('description', 'string', [
             'comment' => '描述',

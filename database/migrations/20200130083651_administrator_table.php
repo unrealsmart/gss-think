@@ -1,8 +1,9 @@
 <?php
 
 use think\migration\Migrator;
+use think\migration\db\Column;
 
-class CreateAdministratorTable extends Migrator
+class AdministratorTable extends Migrator
 {
     /**
      * Change Method.
@@ -45,11 +46,6 @@ class CreateAdministratorTable extends Migrator
             'comment' => '租域',
             'null' => false,
         ]);
-        // 用户通过角色获得权限，若角色为空，则表示此用户无任何权限
-        // 你可以创建特殊的角色来取消某些用户的所有权限
-        $table->addColumn('roles', 'string', [
-            'comment' => '角色',
-        ]);
         $table->addColumn('email', 'string', [
             'comment' => '邮箱',
         ]);
@@ -78,8 +74,8 @@ class CreateAdministratorTable extends Migrator
             'null' => false,
             'default' => 0,
         ]);
-        $table->addForeignKey('domain', 'domain');
         $table->addTimestamps();
+        $table->addForeignKey('domain', 'domain');
         $table->create();
     }
 }

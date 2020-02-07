@@ -1,9 +1,9 @@
 <?php
 
-use Phinx\Db\Adapter\MysqlAdapter;
 use think\migration\Migrator;
+use think\migration\db\Column;
 
-class CreateGlobalConfigTable extends Migrator
+class ConfigTable extends Migrator
 {
     /**
      * Change Method.
@@ -28,7 +28,7 @@ class CreateGlobalConfigTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('global_config');
+        $table = $this->table('config');
         $table->addColumn('name', 'string', [
             'comment' => '名称',
             'limit' => 64,

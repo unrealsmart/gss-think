@@ -3,7 +3,7 @@
 use think\migration\Migrator;
 use think\migration\db\Column;
 
-class CreateModelRelationTable extends Migrator
+class CategoryTable extends Migrator
 {
     /**
      * Change Method.
@@ -28,18 +28,28 @@ class CreateModelRelationTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('model_relation');
-        $table->addColumn('original', 'integer', [
-            'comment' => '关系源ID',
+        $table = $this->table('category');
+        $table->addColumn('superior', 'integer', [
+            'comment' => '上级',
             'null' => false,
+            'default' => 0,
         ]);
         $table->addColumn('name', 'string', [
-            'comment' => '扩展模型名称',
+            'comment' => '名称',
+            'limit' => 64,
             'null' => false,
         ]);
-        $table->addColumn('objective', 'integer', [
-            'comment' => '目标ID',
+        $table->addColumn('title', 'string', [
+            'comment' => '标题',
             'null' => false,
+        ]);
+        $table->addColumn('description', 'string', [
+            'comment' => '描述',
+        ]);
+        $table->addColumn('status', 'boolean', [
+            'comment' => '状态',
+            'null' => false,
+            'default' => 0,
         ]);
         $table->addTimestamps();
         $table->create();

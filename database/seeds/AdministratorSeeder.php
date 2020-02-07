@@ -16,8 +16,28 @@ class AdministratorSeeder extends Seeder
      */
     public function run()
     {
+        // filestore
+        Db::table('filestore')->save([
+            'title' => 'null.jpg',
+            'owner' => 1,
+            'original_title' => 'null.jpg',
+            'status' => 1,
+            'update_time' => date('Y-m-d H:i:s', time()),
+        ]);
+
         // write admin role
         Enforcer::addPolicy('role:admin', 'domain:main', '*', 'a');
+        $authority = new \app\main\model\Authority();
+        $authority->save([
+            'name' => '超级管理员',
+            'title' => '超级管理员',
+            'domain' => 1,
+            'role' => 1,
+            'path' => '*',
+            'action' => 'a',
+            'description' => '拥有所有权限',
+            'status' => 1,
+        ]);
 
         $data = [
             [
@@ -59,8 +79,17 @@ class AdministratorSeeder extends Seeder
                     'username' => $value['username'],
                     'ciphertext' => password_hash($this->encryption($value['password']), PASSWORD_DEFAULT),
                     'domain' => $domain_id,
-                    'roles' => $role_id,
+                    'avatar' => 1,
                     'status' => 1,
+                    'update_time' => date('Y-m-d H:i:s', time()),
+                ]);
+                $id = Db::table('administrator')
+                    ->where('username', $value['username'])
+                    ->value('id');
+                Db::table('role_relation')->save([
+                    'original' => $role_id,
+                    'objective' => $id,
+                    'update_time' => date('Y-m-d H:i:s', time()),
                 ]);
             }
         }
@@ -78,7 +107,7 @@ class AdministratorSeeder extends Seeder
      */
     private function encryption($password)
     {
-        $secret_key = Db::name('global_config')
+        $secret_key = Db::name('config')
             ->where('name', 'administrator_secret_key')
             ->value('value');
 

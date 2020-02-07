@@ -3,7 +3,7 @@
 use think\migration\Migrator;
 use think\migration\db\Column;
 
-class CreateArticleTable extends Migrator
+class AuthorityTable extends Migrator
 {
     /**
      * Change Method.
@@ -28,42 +28,40 @@ class CreateArticleTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('article');
+        $table = $this->table('authority');
         $table->addColumn('title', 'string', [
             'comment' => '标题',
             'null' => false,
         ]);
-        $table->addColumn('subtitle', 'string', [
-            'comment' => '副标题/子标题',
+        $table->addColumn('domain', 'integer', [
+            'comment' => '所属租域',
+            'null' => false,
+            'default' => 0,
+        ]);
+        $table->addColumn('role', 'integer', [
+            'comment' => '所属角色',
+            'null' => false,
+            'default' => 0,
+        ]);
+        $table->addColumn('path', 'string', [
+            'comment' => '授权路径（支持 Casbin KeyMatch 函数）',
             'null' => false,
         ]);
-        $table->addColumn('cover', 'integer', [
-            'comment' => '封面',
-        ]);
-        // 分类不推荐实施交叉功能
-        $table->addColumn('category', 'integer', [
-            'comment' => '分类',
+        $table->addColumn('action', 'string', [
+            'comment' => '授权操作',
             'null' => false,
         ]);
-        $table->addColumn('content', 'text', [
-            'comment' => '内容',
-        ]);
-        $table->addColumn('tags', 'string', [
-            'comment' => '标签',
-        ]);
-        // 模型对应多个内容扩展数据表
-        $table->addColumn('models', 'string', [
-            'comment' => '模型',
+        $table->addColumn('description', 'string', [
+            'comment' => '描述',
         ]);
         $table->addColumn('status', 'boolean', [
             'comment' => '状态',
             'null' => false,
             'default' => 0,
         ]);
-        $table->addColumn('release_time', 'datetime', [
-            'comment' => '发布时间',
-        ]);
         $table->addTimestamps();
+        $table->addForeignKey('domain', 'domain');
+        $table->addForeignKey('role', 'role');
         $table->create();
     }
 }

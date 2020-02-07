@@ -1,10 +1,9 @@
 <?php
 
-use Phinx\Db\Adapter\MysqlAdapter;
 use think\migration\Migrator;
 use think\migration\db\Column;
 
-class CreateDomainTable extends Migrator
+class RoleRelationTable extends Migrator
 {
     /**
      * Change Method.
@@ -29,25 +28,18 @@ class CreateDomainTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('domain');
-
-        $table->addColumn('name', 'string', [
-            'comment' => '名称',
+        $table = $this->table('role_relation');
+        $table->addColumn('original', 'integer', [
+            'comment' => '来源ID（角色ID）',
             'null' => false,
         ]);
-        $table->addColumn('title', 'string', [
-            'comment' => '标题',
+        $table->addColumn('objective', 'integer', [
+            'comment' => '目标ID（管理用户ID）',
             'null' => false,
-        ]);
-        $table->addColumn('description', 'string', [
-            'comment' => '描述',
-        ]);
-        $table->addColumn('status', 'boolean', [
-            'comment' => '状态',
-            'null' => false,
-            'default' => 0,
         ]);
         $table->addTimestamps();
+        $table->addForeignKey('original', 'role');
+        $table->addForeignKey('objective', 'administrator');
         $table->create();
     }
 }

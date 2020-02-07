@@ -14,27 +14,33 @@ class MainSeeder extends Seeder
      */
     public function run()
     {
-        // global_config data
-        $global_config_data = [
+        // config data
+        $config_data = [
             [
-                'name' => 'jwt_secret_key',
-                'title' => 'JSON Web Token 加解密代码',
+                'name' => 'token_secret_key',
+                'title' => '令牌加解密密钥',
                 'value' => 'o0cKmZCLUQGVtKtlG$zideaK4bLey4%c',
                 'status' => 1,
                 'update_time' => date('Y-m-d H:i:s', time()),
             ],
             [
-                'name' => 'jwt_cipher_methods',
-                'title' => 'JSON Web Token 加密密码学方式',
+                'name' => 'token_cipher_method',
+                'title' => '令牌加密方法',
                 'value' => 'AES-128-OFB',
                 'status' => 1,
                 'update_time' => date('Y-m-d H:i:s', time()),
             ],
             [
-                'name' => 'jwt_last_iat',
-                'title' => 'JSON Web Token 最后发布日期',
-                'value' => time(),
-                'description' => '用于在服务端使用户 JWT 令牌失效',
+                'name' => 'token_survival_time',
+                'title' => '令牌生存时间',
+                'value' => 60 * 60 * 12, // 12 hour
+                'status' => 1,
+                'update_time' => date('Y-m-d H:i:s', time()),
+            ],
+            [
+                'name' => 'token_refresh_interval',
+                'title' => '令牌刷新间隔时间',
+                'value' => 60 * 60 * 24 * 3, // 3 day
                 'status' => 1,
                 'update_time' => date('Y-m-d H:i:s', time()),
             ],
@@ -42,12 +48,20 @@ class MainSeeder extends Seeder
                 'name' => 'administrator_secret_key',
                 'title' => '管理员密文加解密代码',
                 'value' => 'thmkkfXUqX1G&ds0wRubQM7vpmklS6ZF',
-                'description' => '专用于管理员密文加解密的代码。',
+                'description' => '专用于管理员密文加解密的密钥',
+                'status' => 1,
+                'update_time' => date('Y-m-d H:i:s', time()),
+            ],
+            [
+                'name' => 'member_secret_key',
+                'title' => '会员密文加解密代码',
+                'value' => 'ifuo%aBxtC2s4%C7KMxY00jmil!3pWhF',
+                'description' => '专用于会员密文加解密的密钥',
                 'status' => 1,
                 'update_time' => date('Y-m-d H:i:s', time()),
             ],
         ];
-        $this->table('global_config')->insert($global_config_data)->save();
+        $this->table('config')->insert($config_data)->save();
 
         // domain data
         $domain_data = [

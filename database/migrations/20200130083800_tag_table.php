@@ -3,7 +3,7 @@
 use think\migration\Migrator;
 use think\migration\db\Column;
 
-class CreateModelCommonTable extends Migrator
+class TagTable extends Migrator
 {
     /**
      * Change Method.
@@ -28,8 +28,24 @@ class CreateModelCommonTable extends Migrator
      */
     public function change()
     {
-        $table = $this->table('model_common');
-        // 在这里添加公共的内容扩展字段
+        $table = $this->table('tag');
+        $table->addColumn('name', 'string', [
+            'comment' => '名称',
+            'limit' => 128,
+            'null' => false,
+        ]);
+        $table->addColumn('title', 'string', [
+            'comment' => '标题',
+            'null' => false,
+        ]);
+        $table->addColumn('description', 'string', [
+            'comment' => '描述',
+        ]);
+        $table->addColumn('status', 'boolean', [
+            'comment' => '状态',
+            'null' => false,
+            'default' => 0,
+        ]);
         $table->addTimestamps();
         $table->create();
     }
