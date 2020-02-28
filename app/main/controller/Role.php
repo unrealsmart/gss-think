@@ -17,9 +17,9 @@ class Role extends BaseController
     public function index()
     {
         $param = request()->param();
-        $page_size = request()->param('page_size', 20);
+        // $page_size = request()->param('page_size', 20);
         $role = new \app\main\model\Role();
-        $data = $role->withSearch(analytic_search_fields($role), $param)->paginate($page_size);
+        $data = $role->withSearch(analytic_search_fields($role), $param)->select();
         return json($data);
     }
 

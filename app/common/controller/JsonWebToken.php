@@ -47,18 +47,17 @@ class JsonWebToken implements iJsonWebToken
     public function create($user = [])
     {
         // expire_time
-        // ip（base64）
         // domian
         // user id + update_time（base64）
-        // secert key
+        // secret key
         // jwt（仅在刷新时可用，通过响应头传递）
 
         $survival_time = Config::where('name', 'token_survival_time')->value('value');
         $expiry_time = time() + $survival_time;
-        $ip = base64_encode(request()->ip());
         $domain = Domain::where('id', $user['domain'])->value('name');
         $plaintext = implode('.', [$user['id'], strtotime($user['update_time'])]);
-        return implode($this->division, [$expiry_time, $ip, $domain, $this->encryption($plaintext)]);
+        $token = implode($this->division, [$expiry_time, $domain, $this->encryption($plaintext)]);
+        return base64_encode($token);
     }
 
     /**
@@ -69,15 +68,10 @@ class JsonWebToken implements iJsonWebToken
      */
     public function verification($token)
     {
-        $data = explode($this->division, $token);
+        $data = explode($this->division, base64_decode($token));
         $expire_time = $data[0];
-        $ip = base64_decode($data[1]);
-        $domain_name = $data[2];
-        list($id, $update_time) = $this->decryption($data[3], $data[4]);
-        // check ip
-        if ($ip !== request()->ip()) {
-            return json(['message' => lang('ip error')], 401);
-        }
+        $domain_name = $data[1];
+        list($id, $update_time) = $this->decryption($data[2], $data[3]);
         /* @var $model \app\main\model\Administrator */
         $model = new $this->relation[$domain_name];
         $user = $model->with(['avatar'])->where('id', $id)->find();
@@ -93,13 +87,13 @@ class JsonWebToken implements iJsonWebToken
         // check refresh interval
         $refresh_interval = Config::where('name', 'token_refresh_interval')->value('value');
         if (time() > $expire_time + $refresh_interval) {
-            header('APP-ACTION: LOGOUT');
+            header('ADP-ACTION: LOGOUT');
             return json(['message' => lang('token refresh interval fail')], 401);
         }
         // check refresh jwt for user
         if (time() > $expire_time || $update_time < strtotime($user['update_time'])) {
-            header('Token: ' . $this->create($user));
-            header('Authorization: ' . base64_encode(json_encode($user)));
+            header('ADP-Token: ' . $this->create($user));
+            header('ADP-User: ' . base64_encode(json_encode($user)));
         }
         // 根据当前的路由地址判断权限
         $contrast = ['GET' => 'r', 'POST' => 'w', 'DELETE' => 'd', 'PUT' => 'u'];

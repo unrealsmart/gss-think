@@ -12,6 +12,16 @@ class Authority extends Model
 {
     protected $table = 'authority';
 
+    public function domain()
+    {
+        return $this->belongsTo(Domain::class, 'domain');
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class, 'role');
+    }
+
     public function searchFsAttr($query, $value, $data)
     {
         $exclude_fields = [];

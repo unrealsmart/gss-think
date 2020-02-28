@@ -21,7 +21,9 @@ class Authority extends BaseController
         $param = request()->param();
         $page_size = request()->param('page_size', 20);
         $authority = new \app\main\model\Authority();
-        $data = $authority->withSearch(analytic_search_fields($authority), $param)->paginate($page_size);
+        $data = $authority->with(['domain', 'role'])
+            ->withSearch(analytic_search_fields($authority), $param)
+            ->paginate($page_size);
         return json($data);
     }
 

@@ -19,9 +19,9 @@ class Domain extends BaseController
     public function index()
     {
         $param = request()->param();
-        $page_size = request()->param('page_size', 20);
+        // $page_size = request()->param('page_size', 20);
         $domain = new \app\main\model\Domain();
-        $data = $domain->withSearch(analytic_search_fields($domain), $param)->paginate($page_size);
+        $data = $domain->withSearch(analytic_search_fields($domain), $param)->select();
         return json($data);
     }
 

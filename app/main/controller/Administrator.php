@@ -25,12 +25,12 @@ class Administrator extends BaseController implements iAdministrator
         $param = request()->param();
         $page_size = request()->param('page_size', 20);
         $administrator = new \app\main\model\Administrator();
-        $data = $administrator->with(['avatar'])
+        $data = $administrator->with(['avatar', 'domain', 'roles'])
             ->withSearch(analytic_search_fields($administrator), $param)
             ->withoutField('ciphertext')
             ->hidden(['avatar.authority'])
             ->paginate($page_size);
-        $data->append(['roles']);
+        // $data->append(['roles']);
         return json($data);
     }
 
@@ -267,7 +267,7 @@ class Administrator extends BaseController implements iAdministrator
         // 当前权限
         $administrator->appendData(['currentAuthority' => $roles]);
 
-        return json($administrator)->header(['Token' => $jwt->create($administrator)]);
+        return json($administrator)->header(['ADP-Token' => $jwt->create($administrator)]);
     }
 
     /**

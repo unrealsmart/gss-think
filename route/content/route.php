@@ -9,7 +9,7 @@ Route::resource('category', 'Content/Category');
 // tag
 Route::resource('tag', 'Content/Tag');
 
-// model
+// AEM（article extended model）
 Route::any('aem', 'Content/Aem');
 
 // article
